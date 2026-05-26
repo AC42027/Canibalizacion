@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Canibalizaciones | Planta L504</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #002855;
+            --primary-dark: #001a38;
+            --accent-yellow: #FFDD00;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding-bottom: 3rem;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: #1e293b;
+            color: white;
+            position: fixed;
+            padding: 2rem 1.5rem;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem 3rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: var(--accent-yellow);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border: 1px solid var(--accent-yellow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-trend {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .trend-up {
+            color: var(--success);
+        }
+
+        /* Table Card */
+        .data-card {
+            background: var(--card);
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .data-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-info {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .user-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+            font-weight: 700;
+        }
+
+        .sidebar h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            color: #94a3b8;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: #334155;
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+        }
+
+        .sidebar-logo {
+            width: 120px;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-none {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .badge-assigned {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #facc15;
+        }
+
+        .badge-danger-rounded {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            text-transform: uppercase;
+            min-width: 140px;
+        }
+        .badge-danger-rounded::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+        }
+
+        .badge-info-rounded {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            text-transform: uppercase;
+            min-width: 140px;
+        }
+        .badge-info-rounded::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Nuevos estados de normalización */
+        .status-pending {
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fdba74;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+        }
+
+        .status-normalized {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #86efac;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+        }
+
+        .btn-toggle-status {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+            display: block;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        .btn-toggle-status:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        /* Estilo para el contenedor de búsqueda */
+        .search-group {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .btn-search {
+            background: var(--primary);
+            color: var(--accent-yellow);
+            border: 2px solid var(--accent-yellow);
+            padding: 0 2rem;
+            border-radius: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-search:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .history-row:hover {
+            background-color: #f1f5f9 !important;
+            box-shadow: inset 4px 0 0 var(--accent-yellow);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <nav style="margin-top: 1rem;">
+            <a href="index.html" class="nav-item">
+                <span>📝</span> Nuevo Registro
+            </a>
+            <a href="history.html" class="nav-item active">
+                <span>📊</span> Dashboard Historial
+            </a>
+            <a href="dashboard.html" class="nav-item">
+                <span>🌳</span> Árbol de Equipos
+            </a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <header>
+            <div>
+                <h1>Dashboard de Canibalizaciones</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Seguimiento oficial de
+                    activos fuera de stock - Planta L504</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn-action"
+                    style="background: white; color: var(--text); border: 1px solid var(--border);"
+                    onclick="location.reload()">🔄 Actualizar</button>
+                <a href="index.html" class="btn-action">➕ Crear Registro</a>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Canibalizaciones</div>
+                <div class="stat-value" id="totalCount">-</div>
+                <div class="stat-trend trend-up"><span>↑</span> 12% vs mes anterior</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pendientes de Normalizar</div>
+                <div class="stat-value" id="pendingCount" style="color: var(--warning);">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Normalizados</div>
+                <div class="stat-value" id="normalizedCount" style="color: var(--success);">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Usuario Activo</div>
+                <div class="stat-value" style="font-size: 1.1rem; color: var(--primary);">ac42027</div>
+            </div>
+
+        </div> <!-- Cierre correcto de stats-grid -->
+
+        <!-- Búsqueda inteligente -->
+        <div class="data-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+            <div class="form-group" style="width: 100%;">
+
+                <div class="search-group">
+                    <input type="text" id="mainSearch" placeholder="Filtre por máquina, repuesto, técnico o usuario..."
+                        style="flex: 1; padding: 1rem 1.25rem; border: 2px solid var(--border); border-radius: 1rem; outline: none; font-size: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <button class="btn-search" onclick="filtrarData()">🔍 BUSCAR</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-card" style="width: 100%;">
+            <div class="data-header" style="background: #f8fafc;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">Historial de Movimientos</h3>
+                <div id="filterStats"
+                    style="font-size: 0.8rem; color: var(--primary); background: var(--accent-yellow); padding: 4px 12px; border-radius: 20px; font-weight: 800; display: none;">
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Fecha</th>
+                            <th style="width: 8%;">OT</th>
+                            <th style="width: 18%;">Máquinas (Origen ➔ Destino)</th>
+                            <th style="width: 15%;">Código Repuesto</th>
+                            <th style="width: 22%;">Nombre del Repuesto (Info. Corta)</th>
+                            <th style="width: 18%;">Técnico - ING. MTTO/PL</th>
+                            <th style="width: 11%; text-align: center;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Puntos de datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let todosLosRegistros = [];
+
+        async function cargarDatos() {
+            try {
+                const response = await fetch('/api/registros');
+                const data = await response.json();
+                todosLosRegistros = data.canibalizaciones || [];
+
+                // Actualizar KPIs iniciales
+                actualizarKPIs(todosLosRegistros);
+                renderTable(todosLosRegistros);
+
+                // Listeners para Filtros
+                document.getElementById('mainSearch').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') filtrarData();
+                });
+
+            } catch (error) {
+                console.error("Error cargando dashboard:", error);
+            }
+        }
+
+        function filtrarData() {
+            const term = document.getElementById('mainSearch').value.toLowerCase();
+            const statsDiv = document.getElementById('filterStats');
+
+            const filtrados = todosLosRegistros.filter(r => {
+                return (
+                    (r.maquina_donante || "").toLowerCase().includes(term) ||
+                    (r.maquina_receptora || "").toLowerCase().includes(term) ||
+                    r.retirado_por.toLowerCase().includes(term) ||
+                    r.responsable_reposicion.toLowerCase().includes(term) ||
+                    r.repuesto_descripcion.toLowerCase().includes(term) ||
+                    (r.repuesto_codigo || "").toLowerCase().includes(term) ||
+                    (r.usuario_registro || "").toLowerCase().includes(term)
+                );
+            });
+
+            statsDiv.style.display = 'block';
+            statsDiv.innerText = `${filtrados.length} resultados encontrados`;
+            renderTable(filtrados);
+        }
+
+        function actualizarKPIs(registros) {
+            document.getElementById('totalCount').innerText = registros.length;
+
+            const pendientes = registros.filter(r => !r.normalizado).length;
+            const normalizados = registros.filter(r => r.normalizado).length;
+
+            document.getElementById('pendingCount').innerText = pendientes;
+            document.getElementById('normalizedCount').innerText = normalizados;
+        }
+
+        function renderTable(data) {
+            const body = document.getElementById('historyBody');
+            if (data.length === 0) {
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 4rem; color: var(--text-muted);">No se encontraron registros que coincidan con los filtros.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = data.slice().reverse().map(r => {
+                const tieneCodigo = r.repuesto_codigo && r.repuesto_codigo !== "SIN CÓDIGO" && r.repuesto_codigo.trim() !== "";
+                const tieneUbicacion = r.codigo_bodega && !["N/A", "POR ASIGNAR", "SIN UBICACIÓN DESIGNADA", "-"].includes(r.codigo_bodega);
+
+                // Estilos de bodega (Badge dinámico)
+                let badgeClass = tieneUbicacion ? 'badge-assigned' : 'badge-none';
+                let ubicacionTexto = tieneUbicacion ? r.codigo_bodega : 'POR ASIGNAR';
+
+                // Lógica de Normalización
+                const isNormalized = r.normalizado === true;
+                const statusBadge = isNormalized
+                    ? `<div class="status-normalized">🟢 Normalizado</div>`
+                    : `<div class="status-pending">🟡 Pendiente</div>`;
+
+                const toggleText = isNormalized ? "Revertir a Pendiente" : "Marcar Normalizado";
+
+                return `
+                    <tr id="row-${r.id}" onclick="window.location.href='detail.html?id=${r.id}'" style="cursor: pointer;" class="history-row">
+                        <td>
+                            <div style="font-weight: 600;">${r.fecha}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">#${r.id.substring(r.id.length - 6)}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.9rem; color: var(--primary); font-weight: 800;">
+                                ${r.orden_trabajo || 'N/A'}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                ${r.maquina_donante ? `
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 700; color: #991b1b;">${r.maquina_donante.split(' > ').pop()}</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Origen</div>
+                                    </div>
+                                    <div style="color: var(--primary); font-weight: 800;">➔</div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 700; color: #166534;">${r.maquina_receptora.split(' > ').pop()}</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Destino</div>
+                                    </div>
+                                ` : `
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 700; color: var(--primary);">${(r.maquina || 'N/A').split(' > ').pop()}</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Equipo Único (Histórico)</div>
+                                    </div>
+                                `}
+                            </div>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            ${(r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo) 
+                                ? `<div class="badge-danger-rounded">SIN CÓDIGO SAP</div>` 
+                                : `<div class="badge-info-rounded" style="color: #0369a1;">${r.repuesto_codigo}</div>`
+                            }
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">
+                                ${r.repuesto_nombre || (r.repuesto_descripcion ? r.repuesto_descripcion.split(' ').slice(0,4).join(' ') : 'N/A')}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="margin-bottom: 0.5rem;">
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${r.retirado_por}</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${r.cargo_tecnico || 'Técnico'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.85rem; font-weight: 700; color: #475569;">${r.responsable_reposicion}</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${r.cargo_responsable || 'Ing. Mtto / PL'}</div>
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            ${statusBadge}
+                            <button onclick="eliminarRegistro(event, '${r.id}')" style="margin-top: 8px; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'" title="Eliminar registro (Modo Prueba)">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function confirmarNormalizacion(id) {
+            const confirmacion = confirm("ATENCIÓN: Esta acción solo debe ser realizada por el Planificador o el Ingeniero de Confiabilidad.\n\n¿Desea continuar con el cambio de estado?");
+            if (confirmacion) {
+                toggleStatus(id);
+            }
+        }
+
+        async function toggleStatus(id) {
+            try {
+                const response = await fetch(`/api/normalizar/${id}`, { method: 'POST' });
+                if (response.ok) {
+                    // Recargar datos para actualizar la vista
+                    cargarDatos();
+                } else {
+                    alert('Error al actualizar el estado.');
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('Error de conexión.');
+            }
+        }
+
+        async function eliminarRegistro(e, id) {
+            e.stopPropagation();
+            const confirmacion = confirm("MODO PRUEBA: ¿Está seguro que desea eliminar este registro temporalmente?");
+            if (confirmacion) {
+                try {
+                    const response = await fetch(`/api/registros/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        cargarDatos();
+                    } else {
+                        alert('Error al eliminar el registro.');
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert('Error de conexión al eliminar.');
+                }
+            }
+        }
+
+        cargarDatos();
+    </script>
+</body>
+
+</html>

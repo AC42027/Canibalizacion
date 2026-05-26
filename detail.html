@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Canibalización | Goodyear Planta L504</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #002855;
+            --primary-dark: #001a38;
+            --accent-yellow: #FFDD00;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #166534;
+            --danger: #991b1b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        .navbar {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--accent-yellow); }
+        .btn-back { color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; }
+
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+
+        .header-section { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 1rem; }
+        .record-id { font-family: 'Outfit', sans-serif; font-size: 2rem; color: var(--primary); }
+        .status-badge { padding: 0.5rem 1rem; border-radius: 2rem; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; width: 240px; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .status-pending { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .status-normalized { background: #dcfce7; color: #166534; border: 1px solid #22c55e; }
+        
+        .badge-sap-manual {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            width: 240px;
+        }
+        .badge-sap-manual::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .badge-sap-official {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            width: 240px;
+        }
+        .badge-sap-official::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+        .card { background: var(--card); border-radius: 1rem; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .full-width { grid-column: span 2; }
+
+        h3 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--primary); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .value { font-size: 1rem; font-weight: 500; margin-bottom: 1rem; }
+        .value-large { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+
+        .machine-flow { display: flex; align-items: center; gap: 1.5rem; background: #f1f5f9; padding: 1.5rem; border-radius: 0.75rem; margin-top: 0.5rem; }
+        .machine-box { flex: 1; }
+        .flow-arrow { font-size: 2rem; color: var(--primary); font-weight: 800; }
+
+        .email-tag { display: inline-flex; align-items: center; gap: 0.5rem; background: #eff6ff; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; margin-top: 0.25rem; }
+        
+        .plan-box { background: #fffbeb; border-left: 4px solid var(--accent-yellow); padding: 1rem; border-radius: 0 0.5rem 0.5rem 0; margin-top: 0.5rem; }
+
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="history.html" class="btn-back">← Volver al Historial</a>
+        <div class="navbar-brand">GOODYEAR | INGENIERÍA</div>
+        <div style="font-size: 0.8rem; opacity: 0.8;">Planta L504 - Sistema de Activos</div>
+    </nav>
+
+    <div class="container" id="content">
+        <!-- Cargando... -->
+        <div style="text-align: center; padding: 5rem; color: var(--text-muted);">
+            <h2>Cargando detalle del registro...</h2>
+        </div>
+    </div>
+
+    <script>
+        async function cargarDetalle() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (!id) {
+                document.getElementById('content').innerHTML = "<h1>Error: No se proporcionó un ID de registro.</h1>";
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/registros/${id}`);
+                const r = await response.json();
+
+                if (r.error) {
+                    document.getElementById('content').innerHTML = `<h1>Error: ${r.error}</h1>`;
+                    return;
+                }
+
+                const statusClass = r.normalizado ? 'status-normalized' : 'status-pending';
+                const statusText = r.normalizado ? '🟢 Repuesto Normalizado' : '🟡 Pendiente de Reposición';
+
+                document.getElementById('content').innerHTML = `
+                    <div class="header-section">
+                        <div>
+                            <div class="label">Registro de Canibalización</div>
+                            <h1 class="record-id">#${r.id.substring(r.id.length - 8)}</h1>
+                            <div style="font-size: 1.1rem; color: var(--primary); font-weight: 700; margin-bottom: 0.25rem;">Orden de Trabajo: ${r.orden_trabajo || 'N/A'}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted);">Registrado el ${r.fecha_registro} por <b>${r.usuario_registro || 'Sistema'}</b></div>
+                        </div>
+                        <div style="text-align: right;">
+                            ${(r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo) 
+                                ? `<div class="badge-sap-manual">⚠️ Sin Código de bodega</div>` 
+                                : `<div class="badge-sap-official">✅ Código Oficial SAP</div>`
+                            }
+                            <br>
+                            <div class="${statusClass} status-badge" style="display: inline-block;">${statusText}</div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width" style="margin-bottom: 2rem;">
+                        <h3>🔄 Flujo de Canibalización</h3>
+                        <div class="machine-flow">
+                            <div class="machine-box">
+                                <div class="label" style="color: var(--danger);">Origen (Donante)</div>
+                                <div class="value-large">${r.maquina_donante.split(' > ').pop()}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${r.maquina_donante}</div>
+                            </div>
+                            <div class="flow-arrow">➔</div>
+                            <div class="machine-box">
+                                <div class="label" style="color: var(--success);">Destino (Receptora)</div>
+                                <div class="value-large">${r.maquina_receptora.split(' > ').pop()}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${r.maquina_receptora}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="label">Información del Repuesto</div>
+                            <div class="value-large" style="color: var(--primary);">${r.repuesto_nombre || 'N/A'}</div>
+                            
+                            <div class="label">Código SAP / PN</div>
+                            <div class="value" style="color: #0369a1; font-weight: 700;">${r.repuesto_codigo || 'SIN CÓDIGO'}</div>
+                            
+                            <div class="label">Descripción Técnica</div>
+                            <div class="value" style="font-size: 0.9rem;">${r.repuesto_descripcion}</div>
+                            
+                            <div class="grid" style="margin-bottom:0;">
+                                <div>
+                                    <div class="label">Cantidad</div>
+                                    <div class="value">${r.cantidad} UN</div>
+                                </div>
+                                <div>
+                                    <div class="label">Ubicación Bodega</div>
+                                    <div class="value" style="font-family: monospace;">${r.codigo_bodega || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>👥 Personal Involucrado</h3>
+                            <div class="label">Retirado por (Técnico)</div>
+                            <div class="value">${r.retirado_por}</div>
+                            <div class="email-tag">📧 ${r.correo_tecnico || 'Sin correo registrado'}</div>
+
+                            <div style="height: 1.5rem;"></div>
+
+                            <div class="label">Responsable (Planner / Ing)</div>
+                            <div class="value">${r.responsable_reposicion}</div>
+                            <div class="email-tag">📧 ${r.correo_responsable || 'Sin correo registrado'}</div>
+
+                            <div style="height: 1.5rem;"></div>
+                            
+                            <div class="label">Personal de Bodega</div>
+                            <div class="value">📦 ${r.personal_bodega || 'No especificado'}</div>
+                        </div>
+
+                        <div class="card full-width">
+                            <h3>📝 Justificación y Plan de Acción</h3>
+                            <div class="grid">
+                                <div>
+                                    <div class="label">Razón de la Canibalización</div>
+                                    <div class="value">${r.razon}</div>
+                                </div>
+                                <div>
+                                    <div class="label">Fecha Estimada Reposición</div>
+                                    <div class="value-large">${r.tiempo_reposicion}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="label">Plan de Acción Preventivo</div>
+                            <div class="plan-box">${r.plan_accion}</div>
+
+                            ${r.comentarios ? `
+                                <div style="margin-top: 1.5rem;">
+                                    <div class="label">Comentarios Adicionales</div>
+                                    <div class="value" style="font-style: italic;">"${r.comentarios}"</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center;">
+                        <button onclick="confirmarNormalizacion('${r.id}')" style="padding: 1rem 2.5rem; background: var(--primary); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); border-radius: 0.75rem; font-weight: 800; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 0.75rem;">
+                            ${r.normalizado ? '↩️ PENDIENTE' : '✅ NORMALIZADO'}
+                        </button>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 3rem; opacity: 0.6; font-size: 0.8rem;">
+                        Documento generado automáticamente por el Sistema de Canibalización Goodyear Planta L504.<br>
+                        Basado en el procedimiento oficial PMAN-7503.
+                    </div>
+                `;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('content').innerHTML = "<h1>Error al cargar los datos del servidor.</h1>";
+            }
+        }
+
+        async function confirmarNormalizacion(id) {
+            const confirmacion = confirm("ATENCIÓN: Esta acción solo debe ser realizada por el Planificador o el Ingeniero de Confiabilidad.\n\n¿Desea cambiar el estado de este repuesto?");
+            if (confirmacion) {
+                try {
+                    const response = await fetch(`/api/normalizar/${id}`, { method: 'POST' });
+                    if (response.ok) {
+                        // Recargar la página para ver los cambios
+                        location.reload();
+                    } else {
+                        alert('Error al actualizar el estado.');
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert('Error de conexión.');
+                }
+            }
+        }
+
+        cargarDetalle();
+    </script>
+</body>
+</html>

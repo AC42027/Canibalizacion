@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Canibalización de Repuestos | Registro Oficial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header>
+            <div class="header-brand">
+                <div>
+                    <h1>Registro de Canibalización</h1>
+                    <p class="subtitle">Formato oficial basado en PMAN-7503</p>
+                </div>
+            </div>
+        </header>
+
+        <form id="canibalizacionForm">
+
+            <fieldset>
+                <legend>Información General</legend>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Fecha del Evento</label>
+                        <input type="date" name="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Registro (Hoy)</label>
+                        <input type="date" name="fecha_registro" id="fecha_registro" readonly>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Flujo de Equipos (Canibalización)</legend>
+
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <button type="button" id="btnAbrirArbol" class="btn-dashboard"
+                        style="width: 100%; justify-content: center;">
+                        🔍 Abrir Explorador Visual de Equipos
+                    </button>
+                </div>
+
+                <div class="grid">
+                    <!-- Máquina Donante -->
+                    <div class="form-group">
+                        <label>1. Máquina Donante (De donde se retira)</label>
+                        <div style="position: relative;">
+                            <input type="text" id="inputBusquedaDonante" placeholder="Buscar máquina origen..."
+                                autocomplete="off" style="width: 100%;">
+                            <div id="resultsDonante" class="search-results-list" style="display: none;"></div>
+                        </div>
+                        <div id="containerDonante" class="stock-indicator success"
+                            style="display: none; margin-top: 0.5rem; font-size: 0.8rem;">
+                            <strong>Origen:</strong> <span id="pathDonante"></span>
+                        </div>
+                        <input type="hidden" name="maquina_donante" id="valDonante" required>
+                    </div>
+
+                    <!-- Máquina Receptora -->
+                    <div class="form-group">
+                        <label>2. Máquina Receptora (A donde se entrega)</label>
+                        <div style="position: relative;">
+                            <input type="text" id="inputBusquedaReceptora" placeholder="Buscar máquina destino..."
+                                autocomplete="off" style="width: 100%;">
+                            <div id="resultsReceptora" class="search-results-list" style="display: none;"></div>
+                        </div>
+                        <div id="containerReceptora" class="stock-indicator success"
+                            style="display: none; margin-top: 0.5rem; font-size: 0.8rem;">
+                            <strong>Destino:</strong> <span id="pathReceptora"></span>
+                        </div>
+                        <input type="hidden" name="maquina_receptora" id="valReceptora" required>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Detalle del Repuesto</legend>
+                <div class="grid">
+                    <!-- Buscador Unificado -->
+                    <div class="form-group full-width">
+                        <label>Buscar Repuesto</label>
+                        <div class="unified-search-container">
+                            <select id="tipoBusqueda" class="search-select">
+                                <option value="codigo">Código</option>
+                                <option value="descripcion">Part Number / Desc.</option>
+                                <option value="sin_codigo">Repuesto sin código</option>
+                            </select>
+                            <input type="text" id="inputBusqueda" placeholder="Ingrese el valor a buscar...">
+                            <button type="button" id="btnBuscar" class="btn-primary-search">Buscar en
+                                Inventario</button>
+                            <button type="button" id="btnVolverABuscar" class="btn-dashboard"
+                                style="display: none; background: #94a3b8; padding: 0.5rem 1rem;">↩ Volver a
+                                Buscar</button>
+                        </div>
+                    </div>
+
+                    <!-- Estado de la búsqueda -->
+                    <div class="form-group full-width" id="stockStatusContainer" style="display: none;">
+                        <div id="stockStatus" class="stock-indicator"></div>
+                    </div>
+
+                    <!-- Resultados Finales (Código visible y editable en modo manual) -->
+                    <div class="form-group">
+                        <label>Código de Repuesto / Part Number</label>
+                        <input type="text" name="repuesto_codigo" id="repuesto_codigo" readonly
+                            placeholder="Autocompletado al buscar..."
+                            style="background-color: #f8fafc; cursor: not-allowed; font-weight: 700;">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Repuesto (Info. Corta)</label>
+                        <input type="text" name="repuesto_nombre" id="repuesto_nombre" required
+                            placeholder="Ej: Rodamiento Pulldrive, Drive eje X..."
+                            style="border: 2px solid var(--primary-color); font-weight: 700;">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Descripción Técnica Detallada</label>
+                        <textarea name="repuesto_descripcion" id="repuesto_descripcion" required readonly
+                            placeholder="Nombre técnico y detalles del componente..."
+                            style="min-height: 80px; background-color: #f8fafc; cursor: not-allowed;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Cantidad a retirar</label>
+                        <input type="number" name="cantidad" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ubicación en Bodega</label>
+                        <input type="text" name="codigo_bodega" id="codigo_bodega" readonly
+                            placeholder="Autocompletado al buscar..."
+                            style="background-color: #f8fafc; cursor: not-allowed; font-weight: 700;">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Razón por la cual no hay repuesto en stock</label>
+                        <textarea name="razon" placeholder="Explique el motivo de la falta de stock..."
+                            required></textarea>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Ejecución y Seguimiento</legend>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Orden de Trabajo (OT)</label>
+                        <input type="text" name="orden_trabajo" id="orden_trabajo" placeholder="Ingrese el número de OT"
+                            required style="border: 2px solid var(--primary-color); font-weight: 700;">
+                    </div>
+                    <div class="form-group">
+                        <label>Retirado por (Técnico)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" name="retirado_por" id="retirado_por" placeholder="Nombre completo"
+                                required autocomplete="off">
+                            <div id="results_retirado" class="autocomplete-results"></div>
+                        </div>
+                        <div id="email_tecnico_container"
+                            style="display:none; margin-top:0.5rem; font-size:0.75rem; color:var(--primary-color);">
+                            <i class="bi bi-envelope"></i> <span id="val_correo_tecnico">-</span>
+                            <input type="hidden" name="correo_tecnico" id="correo_tecnico">
+                            <input type="hidden" name="cargo_tecnico" id="cargo_tecnico">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Responsable por Reponer (PL\ING. MTTO)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" name="responsable_reposicion" id="responsable_reposicion"
+                                placeholder="Nombre del responsable" required autocomplete="off">
+                            <div id="results_responsable" class="autocomplete-results"></div>
+                        </div>
+                        <div id="email_responsable_container"
+                            style="display:none; margin-top:0.5rem; font-size:0.75rem; color:var(--primary-color);">
+                            <i class="bi bi-envelope"></i> <span id="val_correo_responsable">-</span>
+                            <input type="hidden" name="correo_responsable" id="correo_responsable">
+                            <input type="hidden" name="cargo_responsable" id="cargo_responsable">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Personal de Bodega (Entrega repuesto)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" name="personal_bodega" id="personal_bodega"
+                                placeholder="Marcel García (Store Room Specialist)" autocomplete="off">
+                            <div id="results_bodega" class="autocomplete-results"></div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem;">
+                            Sugerencia: <b>Marcel García</b> (Store Room Specialist)
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha estimada de reposición</label>
+                        <input type="date" name="tiempo_reposicion" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Plan de acción para evitar esto en el futuro</label>
+                        <textarea name="plan_accion" placeholder="Medidas preventivas..." required></textarea>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Notas Adicionales</legend>
+                <div class="form-group">
+                    <textarea name="comentarios" placeholder="Observaciones opcionales..."></textarea>
+                </div>
+            </fieldset>
+
+            <input type="hidden" name="usuario_registro" id="usuario_registro" value="ac42027">
+
+            <button type="submit">Guardar Registro Oficial</button>
+
+        </form>
+
+        <!-- FORMATO A: VISTA INTEGRADA -->
+        <section id="integratedHistory"
+            style="margin-top: 4rem; border-top: 3px solid var(--accent-yellow); padding-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2
+                    style="font-size: 1.25rem; color: var(--primary-color); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Resumen de Actividad Reciente</h2>
+                <a href="history.html" class="btn-dashboard">Ir al Dashboard Completo ↗</a>
+            </div>
+            <div class="table-container-mini">
+                <table class="integrated-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Equipo / Máquina (Flujo)</th>
+                            <th style="width: 40%;">Repuesto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="integratedHistoryBody">
+                        <tr>
+                            <td colspan="3" style="text-align:center; padding: 2rem; color: var(--text-muted);">Cargando
+                                registros...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal para el Árbol de Equipos -->
+    <div id="modalArbol" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin:0; font-size:1.25rem;">Explorador Visual de Equipos</h2>
+                <button type="button" id="btnCerrarArbol" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-search">
+                <div class="target-selector">
+                    <button type="button" id="btnSelectDonante" class="target-btn active"
+                        onclick="setTargetContext('donante')">
+                        1. Máquina DONANTE
+                    </button>
+                    <button type="button" id="btnSelectReceptora" class="target-btn"
+                        onclick="setTargetContext('receptora')">
+                        2. Máquina RECEPTORA
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="treeRootModal">Cargando árbol...</div>
+            </div>
+            <div class="modal-footer">
+                <p>Navegue y haga clic en <strong>[Seleccionar]</strong> para usar el equipo en el registro.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Resultados de Búsqueda de Repuestos -->
+    <div id="modalRepuestos" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 style="margin:0; font-size:1.25rem;">Resultados de Búsqueda</h2>
+                <button type="button" id="btnCerrarRepuestos" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <table class="integrated-table" style="margin:0;">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descripción</th>
+                            <th>Stock Total</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaRepuestosBody">
+                        <!-- Los resultados se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Estilos para el Modal del Árbol */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            animation: fadeInModal 0.3s ease;
+        }
+
+        @keyframes fadeInModal {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 2% auto;
+            width: 90%;
+            max-width: 900px;
+            height: 85vh;
+            border-radius: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            background: var(--primary-color);
+            border-bottom: 3px solid var(--accent-yellow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--accent-yellow);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--accent-yellow);
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+
+        .btn-close:hover {
+            transform: scale(1.1);
+            color: #fff;
+        }
+
+        .modal-search {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #fff;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            background: #f8fafc;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Estilos del Árbol (Portados de dashboard.html con mejoras) */
+        .tree-node {
+            margin-left: 15px;
+            border-left: 1px dashed #e2e8f0;
+            padding-left: 10px;
+        }
+
+        .node-content {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 2px 0;
+            transition: all 0.2s;
+        }
+
+        .node-content:hover {
+            background: #f1f5f9;
+        }
+
+        .node-toggle {
+            width: 18px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .node-toggle.expanded {
+            transform: rotate(90deg);
+        }
+
+        .node-id {
+            font-size: 0.7rem;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-right: 8px;
+            font-family: monospace;
+        }
+
+        .node-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .btn-select-node {
+            opacity: 0;
+            padding: 2px 8px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .node-content:hover .btn-select-node {
+            opacity: 1;
+        }
+
+        .children-container {
+            display: none;
+        }
+
+        .children-container.active {
+            display: block;
+        }
+
+        .leaf .node-toggle {
+            visibility: hidden;
+        }
+
+        .highlight-tree {
+            background-color: #fef9c3 !important;
+            border: 1px solid #fde047;
+        }
+
+        mark {
+            background-color: #dbeafe;
+            /* Azul muy claro */
+            color: #1e40af;
+            /* Azul oscuro */
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* Estilos Tabla Integrada */
+        .table-container-mini {
+            background: #ffffff;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .integrated-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .integrated-table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background-color: var(--primary-color);
+            color: var(--accent-yellow);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--accent-yellow);
+        }
+
+        .integrated-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0, 40, 85, 0.1);
+            color: var(--text-main);
+        }
+
+        .integrated-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .integrated-table tr:hover {
+            background-color: #fffde7;
+            cursor: default;
+        }
+
+        .badge-bodega {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        /* Estilos para Autocompletado de Personal */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .autocomplete-item .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: block;
+        }
+
+        .autocomplete-item .title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        /* Indicadores de Ubicación */
+        .location-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+
+        .location-none {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .location-assigned {
+            background-color: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #facc15;
+        }
+
+        /* Estilos del Selector de Máquina en el Modal */
+        .target-selector {
+            display: flex;
+            background: #f1f5f9;
+            padding: 0.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+            gap: 0.5rem;
+        }
+
+        .target-btn {
+            flex: 1;
+            border: 1px solid #cbd5e1;
+            padding: 0.8rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .target-btn.active {
+            background: var(--primary-color) !important;
+            color: var(--accent-yellow) !important;
+            box-shadow: 0 4px 12px rgba(0, 40, 85, 0.2);
+            border-color: var(--accent-yellow) !important;
+            transform: translateY(-1px);
+        }
+
+        .target-btn:hover:not(.active) {
+            background: #f8fafc;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+    </style>
+
+    <script>
+        // Función genérica para verificar stock (por código o descripción)
+        async function realizarBusqueda(query, tipo) {
+            const statusDiv = document.getElementById('stockStatus');
+            const container = document.getElementById('stockStatusContainer');
+            const modalRepuestos = document.getElementById('modalRepuestos');
+            const listaBody = document.getElementById('listaRepuestosBody');
+
+            if (!query) {
+                alert('Por favor ingrese un valor para buscar.');
+                return;
+            }
+
+            container.style.display = 'block';
+            statusDiv.className = 'stock-indicator loading';
+            statusDiv.innerText = 'Consultando...';
+
+            try {
+                const response = await fetch(`/api/stock/repuesto/${encodeURIComponent(query)}?tipo=${tipo}`);
+                const result = await response.json();
+
+                if (result.existe) {
+                    if (result.multiple) {
+                        // Mostrar Modal si hay múltiples resultados
+                        statusDiv.className = 'stock-indicator warning';
+                        statusDiv.innerText = `Se encontraron ${result.resultados.length} coincidencias. Seleccione una del listado.`;
+
+                        listaBody.innerHTML = result.resultados.map((item, idx) => `
+                            <tr>
+                                <td><strong>${item.codigo}</strong></td>
+                                <td style="font-size: 0.85rem;">${item.descripcion}</td>
+                                <td style="text-align: center;">${item.stock_total}</td>
+                                <td>
+                                    <button type="button" class="btn-dashboard" style="padding: 4px 8px; font-size: 0.75rem;" 
+                                        onclick='seleccionarRepuestoDeLista(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                                        Seleccionar
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+
+                        modalRepuestos.style.display = 'block';
+                    } else {
+                        // Procesar resultado único
+                        aplicarDatosRepuesto(result);
+                    }
+                } else {
+                    statusDiv.className = 'stock-indicator error';
+                    statusDiv.innerHTML = `
+                        <strong>No encontrado</strong> <br>
+                        <small style="color:#64748b">${result.mensaje}</small><br>
+                        <button type="button" onclick="activarModoManual()" style="margin-top:0.5rem; padding: 2px 8px; font-size: 0.7rem; cursor:pointer;">Ingresar manualmente</button>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.className = 'stock-indicator error';
+                statusDiv.innerText = 'Error de conexión con la red interna.';
+                console.error(error);
+            }
+        }
+
+        function aplicarDatosRepuesto(data) {
+            const statusDiv = document.getElementById('stockStatus');
+            const descInput = document.getElementById('repuesto_descripcion');
+            const codInput = document.getElementById('repuesto_codigo');
+            const locationBadge = document.getElementById('locationStatusBadge');
+            const hasStock = parseInt(data.stock_total) > 0;
+
+            statusDiv.className = `stock-indicator ${hasStock ? 'success' : 'warning'}`;
+            statusDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(0,0,0,0.05); pb: 0.5rem;">
+                    <strong>${hasStock ? 'Disponible' : 'Sin Stock Total'}</strong>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.9rem; color: #065f46;">Nuevo: <strong>${data.precio_nuevo}</strong></div>
+                        <div style="font-size: 0.8rem; color: #92400e;">Reparado: <strong>${data.precio_reparado}</strong></div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                    <span>Stock Nuevo: <strong>${data.stock_nuevo}</strong></span>
+                    <span>Stock Reparado: <strong>${data.stock_reparado}</strong></span>
+                    <span style="grid-column: span 2; color: #64748b; font-size: 0.75rem; font-style: italic;">${data.mensaje}</span>
+                </div>
+            `;
+
+            descInput.value = data.descripcion_extensa || data.descripcion;
+            codInput.value = data.codigo;
+
+            // Autocompletar nombre corto si es posible
+            const nameInput = document.getElementById('repuesto_nombre');
+            if (nameInput && data.descripcion) {
+                // Tomar las primeras palabras de la descripción como sugerencia si está vacío
+                if (!nameInput.value) {
+                    nameInput.value = data.descripcion.split(' ').slice(0, 4).join(' ');
+                }
+            }
+
+            const bodegaInput = document.getElementById('codigo_bodega');
+            if (bodegaInput) {
+                if (data.mensaje && data.mensaje.includes("Ubicación:")) {
+                    const bodega = data.mensaje.replace("Ubicación: ", "").trim();
+                    bodegaInput.value = bodega;
+                    bodegaInput.style.backgroundColor = "#fef9c3"; // Amarillo suave
+                    bodegaInput.style.borderColor = "#facc15";
+                    bodegaInput.style.color = "var(--primary-color)";
+                } else {
+                    bodegaInput.value = "SIN UBICACIÓN DESIGNADA";
+                    bodegaInput.style.backgroundColor = "#fee2e2"; // Rojo suave
+                    bodegaInput.style.borderColor = "#f87171";
+                    bodegaInput.style.color = "#991b1b";
+                }
+            }
+
+            actualizarEstadoPersonalBodega(true);
+        }
+
+        // Búsqueda por botón (ya no es automática)
+        window.seleccionarRepuestoDeLista = function (item) {
+            aplicarDatosRepuesto(item);
+            document.getElementById('modalRepuestos').style.display = 'none';
+        }
+
+        document.getElementById('btnCerrarRepuestos').onclick = () => {
+            document.getElementById('modalRepuestos').style.display = 'none';
+        };
+
+        // Función para activar el modo manual
+        function activarModoManual() {
+            const codInput = document.getElementById('repuesto_codigo');
+            const descInput = document.getElementById('repuesto_descripcion');
+            const bodegaInput = document.getElementById('codigo_bodega');
+            const statusContainer = document.getElementById('stockStatusContainer');
+            const btnVolver = document.getElementById('btnVolverABuscar');
+
+            // Limpiar campos al entrar a modo manual
+            codInput.value = "";
+            descInput.value = "";
+            document.getElementById('repuesto_nombre').value = "";
+            
+            // Configurar ubicación de bodega por defecto en modo manual
+            if (bodegaInput) {
+                bodegaInput.value = "SIN UBICACIÓN DESIGNADA";
+                bodegaInput.readOnly = false;
+                bodegaInput.style.backgroundColor = "#fee2e2";
+                bodegaInput.style.borderColor = "#f87171";
+                bodegaInput.style.color = "#991b1b";
+                bodegaInput.style.cursor = "text";
+            }
+            
+            // Habilitar inputs para modo manual
+            codInput.readOnly = false;
+            codInput.style.backgroundColor = "#ffffff";
+            codInput.style.cursor = "text";
+            codInput.placeholder = "Ingrese código manual o Part Number...";
+            codInput.focus();
+
+            descInput.readOnly = false;
+            descInput.style.backgroundColor = "#ffffff";
+            descInput.style.cursor = "text";
+            descInput.placeholder = "Ingrese descripción técnica de forma manual...";
+
+            // Ocultar buscador interno y mostrar botón volver
+            document.getElementById('tipoBusqueda').style.display = 'none';
+            document.getElementById('inputBusqueda').style.display = 'none';
+            document.getElementById('btnBuscar').style.display = 'none';
+            statusContainer.style.display = 'none';
+            btnVolver.style.display = 'inline-block';
+
+            actualizarEstadoPersonalBodega(false);
+        }
+
+        // Función para desactivar modo manual y volver a buscar
+        function desactivarModoManual() {
+            const codInput = document.getElementById('repuesto_codigo');
+            const descInput = document.getElementById('repuesto_descripcion');
+            const bodegaInput = document.getElementById('codigo_bodega');
+            const btnVolver = document.getElementById('btnVolverABuscar');
+            const tipoBusqueda = document.getElementById('tipoBusqueda');
+
+            // Revertir a modo lectura/autocompletado
+            codInput.readOnly = true;
+            codInput.value = "";
+            codInput.placeholder = "Autocompletado al buscar...";
+            codInput.style.backgroundColor = "#f8fafc";
+            codInput.style.cursor = "not-allowed";
+
+            descInput.readOnly = true;
+            descInput.value = "";
+            descInput.placeholder = "Nombre técnico y detalles del componente...";
+            descInput.style.backgroundColor = "#f8fafc";
+            descInput.style.cursor = "not-allowed";
+
+            if (bodegaInput) {
+                bodegaInput.readOnly = true;
+                bodegaInput.value = "";
+                bodegaInput.placeholder = "Autocompletado al buscar...";
+                bodegaInput.style.backgroundColor = "#f8fafc";
+                bodegaInput.style.borderColor = "";
+                bodegaInput.style.color = "";
+                bodegaInput.style.cursor = "not-allowed";
+            }
+
+            // Mostrar buscador y resetear selector
+            document.getElementById('tipoBusqueda').style.display = '';
+            document.getElementById('inputBusqueda').style.display = '';
+            document.getElementById('btnBuscar').style.display = '';
+            btnVolver.style.display = 'none';
+            tipoBusqueda.value = 'codigo';
+
+            // Disparar evento de cambio para resetear placeholder del input
+            tipoBusqueda.dispatchEvent(new Event('change'));
+
+            actualizarEstadoPersonalBodega(false);
+        }
+
+        // Controla si se requiere o no el personal de bodega según la existencia del código
+        function actualizarEstadoPersonalBodega(existeCodigo) {
+            const pbInput = document.getElementById('personal_bodega');
+            const pbResults = document.getElementById('results_bodega');
+            if (!pbInput) return;
+
+            if (existeCodigo) {
+                // Habilitar y hacer obligatorio
+                pbInput.disabled = false;
+                pbInput.required = true;
+                pbInput.placeholder = "Nombre del personal de bodega (Obligatorio)";
+                pbInput.style.backgroundColor = "#ffffff";
+                pbInput.style.borderColor = "var(--primary-color)";
+                pbInput.style.fontWeight = "700";
+                pbInput.style.cursor = "text";
+            } else {
+                // Deshabilitar, quitar obligatorio y limpiar valor
+                pbInput.value = "";
+                pbInput.disabled = true;
+                pbInput.required = false;
+                pbInput.placeholder = "No admitido (repuesto manual / sin código)";
+                pbInput.style.backgroundColor = "#e2e8f0"; // Gris claro / deshabilitado
+                pbInput.style.borderColor = "#cbd5e1";
+                pbInput.style.fontWeight = "normal";
+                pbInput.style.cursor = "not-allowed";
+                if (pbResults) {
+                    pbResults.innerHTML = "";
+                    pbResults.style.display = "none";
+                }
+            }
+        }
+
+
+        // --- FUNCIONES DE CARGA ---
+        async function cargarHistorialIntegrado() {
+            console.log("Iniciando carga de historial integrado...");
+            const container = document.getElementById('integratedHistoryBody');
+            if (!container) return;
+
+            try {
+                const response = await fetch('/api/registros');
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const data = await response.json();
+                const registros = data.canibalizaciones || [];
+
+                if (registros.length === 0) {
+                    container.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem; color: var(--text-muted);">No hay registros aún.</td></tr>';
+                    return;
+                }
+
+                const ultimos5 = registros.slice().reverse().slice(0, 5);
+                container.innerHTML = ultimos5.map(r => {
+                    const maquinaDisplay = r.maquina_receptora ? (r.maquina_receptora.split(' > ').pop() || r.maquina_receptora) : (r.maquina ? r.maquina.split(' > ').pop() : 'N/A');
+                    const flujoDisplay = r.maquina_donante ? `${r.maquina_donante.split(' > ').pop()} ➔ ${r.maquina_receptora.split(' > ').pop()}` : maquinaDisplay;
+
+                    const displayCodigo = (r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo)
+                        ? '<span style="color: #94a3b8; font-style: italic;">SIN CÓDIGO</span>'
+                        : `<strong>${r.repuesto_codigo}</strong>`;
+
+                    return `
+                        <tr onclick="window.location.href='detail.html?id=${r.id}'" style="cursor: pointer;">
+                            <td>${r.fecha}</td>
+                            <td title="${r.maquina_receptora || r.maquina || ''}">${flujoDisplay}</td>
+                            <td><strong>${r.repuesto_nombre || (r.repuesto_descripcion ? r.repuesto_descripcion.split(' ').slice(0, 4).join(' ') : 'N/A')}</strong><br><small>${displayCodigo}</small></td>
+                        </tr>
+                    `;
+                }).join('');
+                console.log("Historial integrado cargado con éxito.");
+            } catch (error) {
+                console.error("Error cargando historial:", error);
+                container.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 2rem; color: #ef4444;">Error al cargar datos.</td></tr>`;
+            }
+        }
+
+        // Lógica de Autocompletado de Personal (LDAP)
+        function setupAutocomplete(inputId, resultsId, roleFilter = null) {
+            const input = document.getElementById(inputId);
+            const resultsContainer = document.getElementById(resultsId);
+            let abortController = null;
+
+            if (!input || !resultsContainer) return;
+
+            let debounceTimeout;
+
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimeout);
+                const query = input.value.trim();
+
+                if (query.length < 3) {
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+
+                // Cancelar petición anterior
+                if (abortController) abortController.abort();
+                abortController = new AbortController();
+
+                debounceTimeout = setTimeout(async () => {
+                    try {
+                        // Búsqueda de personal sin filtro de división (según solicitud)
+                        const response = await fetch(`/api/personal?q=${encodeURIComponent(query)}`, {
+                            signal: abortController.signal
+                        });
+                        const data = await response.json();
+
+                        let filteredData = data;
+                        if (roleFilter) {
+                            const filters = roleFilter.toLowerCase().split('|');
+                            filteredData = data.filter(p => {
+                                const title = (p.title || "").toLowerCase();
+                                return filters.some(f => title.includes(f));
+                            });
+                        }
+
+                        const finalResults = filteredData.slice(0, 5);
+
+                        if (finalResults.length > 0) {
+                            resultsContainer.innerHTML = finalResults.map(p => {
+                                // Limpiar el cargo para no mostrar el departamento (lo que esté después de • o -)
+                                let displayTitle = p.title || 'Personal';
+                                if (displayTitle.includes('•')) {
+                                    displayTitle = displayTitle.split('•')[0].trim();
+                                } else if (displayTitle.includes('-')) {
+                                    // A veces usan guion en lugar de punto
+                                    const parts = displayTitle.split('-');
+                                    if (parts.length > 1) displayTitle = parts[0].trim();
+                                }
+
+                                return `
+                                    <div class="autocomplete-item" onclick='seleccionarPersona("${inputId}", "${resultsId}", ${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+                                        <span class="name">${p.displayName}</span>
+                                        <span class="title">${displayTitle}</span>
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            // Mostrar mensaje de error si es por filtro de cargo
+                            const msg = roleFilter ? "Usuario no válido para este cargo" : "No se encontraron resultados";
+                            resultsContainer.innerHTML = `<div class="autocomplete-no-results" style="padding:10px; color:red; font-size:0.8rem;">${msg}</div>`;
+                        }
+                        resultsContainer.style.display = 'block';
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            console.error("Error buscando personal:", error);
+                        }
+                    }
+                }, 300);
+            });
+
+            // Manejo de tecla Enter para seleccionar el primero
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const firstItem = resultsContainer.querySelector('.autocomplete-item');
+                    if (firstItem && resultsContainer.style.display === 'block') {
+                        e.preventDefault();
+                        firstItem.click();
+                    }
+                }
+            });
+
+            // Cerrar al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.style.display = 'none';
+                }
+            });
+        }
+
+        window.seleccionarPersona = async function (inputId, resultsId, person) {
+            document.getElementById(inputId).value = person.displayName;
+            document.getElementById(resultsId).style.display = 'none';
+
+            // Lógica para el Técnico (Retirado por)
+            if (inputId === 'retirado_por') {
+                const emailCont = document.getElementById('email_tecnico_container');
+                const emailVal = document.getElementById('val_correo_tecnico');
+                const emailInput = document.getElementById('correo_tecnico');
+                const cargoInput = document.getElementById('cargo_tecnico');
+
+                if (person.email) {
+                    emailCont.style.display = 'block';
+                    emailVal.innerText = person.email;
+                    emailInput.value = person.email;
+                }
+
+                // Limpiar y asignar cargo
+                let displayTitle = person.title || 'Técnico';
+                if (displayTitle.includes('•')) displayTitle = displayTitle.split('•')[0].trim();
+                else if (displayTitle.includes('-')) {
+                    const parts = displayTitle.split('-');
+                    if (parts.length > 1) displayTitle = parts[0].trim();
+                }
+                cargoInput.value = displayTitle;
+            }
+
+            // Lógica para el Responsable
+            if (inputId === 'responsable_reposicion') {
+                const emailCont = document.getElementById('email_responsable_container');
+                const emailVal = document.getElementById('val_correo_responsable');
+                const emailInput = document.getElementById('correo_responsable');
+                const cargoInput = document.getElementById('cargo_responsable');
+
+                if (person.email) {
+                    emailCont.style.display = 'block';
+                    emailVal.innerText = person.email;
+                    emailInput.value = person.email;
+                }
+
+                // Limpiar y asignar cargo
+                let displayTitle = person.title || 'Responsable';
+                if (displayTitle.includes('•')) displayTitle = displayTitle.split('•')[0].trim();
+                else if (displayTitle.includes('-')) {
+                    const parts = displayTitle.split('-');
+                    if (parts.length > 1) displayTitle = parts[0].trim();
+                }
+                cargoInput.value = displayTitle;
+            }
+        };
+
+        async function buscarCorreoJefe(bossId, bossName) {
+            try {
+                const response = await fetch(`/api/personal?q=${bossId}`);
+                const data = await response.json();
+                if (data.length > 0) {
+                    const boss = data[0];
+                    // Auto-rellenar el responsable si está vacío o si queremos sugerirlo
+                    const respInput = document.getElementById('responsable_reposicion');
+                    if (!respInput.value) {
+                        respInput.value = boss.displayName;
+
+                        const emailCont = document.getElementById('email_responsable_container');
+                        const emailVal = document.getElementById('val_correo_responsable');
+                        const emailInput = document.getElementById('correo_responsable');
+
+                        if (boss.email) {
+                            emailCont.style.display = 'block';
+                            emailVal.innerText = boss.email;
+                            emailInput.value = boss.email;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error buscando correo del jefe:", err);
+            }
+        }
+
+
+        // Lógica de Filtros en Cascada (Equipos)
+        let arbolCompleto = null;
+        let arbolPlano = []; // Para búsqueda rápida
+        let targetMachineContext = 'donante'; // 'donante' o 'receptora'
+
+        // Etiquetas para los niveles
+        const etiquetas = [
+            "División",
+            "Área / Departamento",
+            "Máquina / Equipo",
+            "Subdivisión / Componente",
+            "Sección / Grupo",
+            "Detalle / Pieza",
+            "Sub-Componente",
+            "Módulo",
+            "Parte Específica",
+            "Nivel Extra"
+        ];
+
+        async function cargarEquipos() {
+            try {
+                const response = await fetch('/api/equipos');
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error("Error API:", data.error);
+                    return;
+                }
+
+                arbolCompleto = data;
+
+                // Cargar primer selector
+                const selDiv = document.getElementById('selDivision');
+                if (selDiv && arbolCompleto.divisiones) {
+                    selDiv.innerHTML = '<option value="">Seleccione División...</option>';
+                    arbolCompleto.divisiones.forEach((div, index) => {
+                        selDiv.add(new Option(div.nombre, index));
+                    });
+                    selDiv.onchange = () => handleDynamicChange(0);
+                }
+
+                // Generar índice en segundo plano
+                setTimeout(() => {
+                    generarArbolPlano(arbolCompleto.divisiones || [], "");
+                }, 100);
+
+            } catch (e) {
+                console.error("Error al cargar equipos:", e);
+            }
+        }
+
+        function generarArbolPlano(nodos, pathActual) {
+            if (!nodos) return;
+            nodos.forEach(nodo => {
+                const nuevoPath = pathActual ? `${pathActual} > ${nodo.nombre}` : nodo.nombre;
+                arbolPlano.push({ nombre: nodo.nombre, path: nuevoPath, id: nodo.id });
+                if (nodo.hijos && nodo.hijos.length > 0) {
+                    generarArbolPlano(nodo.hijos, nuevoPath);
+                }
+            });
+        }
+
+        function setupMachineAutocomplete(inputId, resultsId, containerId, pathId, valId) {
+            const input = document.getElementById(inputId);
+            const resultsContainer = document.getElementById(resultsId);
+            const container = document.getElementById(containerId);
+            const pathSpan = document.getElementById(pathId);
+            const hiddenVal = document.getElementById(valId);
+
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+
+                if (query.length === 0) {
+                    resultsContainer.style.display = 'none';
+                    hiddenVal.value = "";
+                    pathSpan.innerText = "";
+                    container.style.display = 'none';
+                    return;
+                }
+
+                if (query.length < 3) {
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+
+                const queryTerms = query.split(/\s+/);
+                const scoredMatches = arbolPlano
+                    .map(item => {
+                        let score = 0;
+                        const nombreLower = item.nombre.toLowerCase();
+                        const pathLower = item.path.toLowerCase();
+
+                        if (nombreLower.startsWith(queryTerms[0])) score += 100;
+
+                        const palabrasNombre = nombreLower.replace(/([0-9]+)/g, ' $1 ').split(/[\s-]+/).filter(Boolean);
+                        queryTerms.forEach(term => {
+                            if (palabrasNombre.includes(term)) {
+                                score += 80;
+                            } else {
+                                const termAsNum = parseInt(term);
+                                if (!isNaN(termAsNum)) {
+                                    palabrasNombre.forEach(p => {
+                                        if (parseInt(p) === termAsNum) score += 70;
+                                    });
+                                }
+                            }
+                        });
+
+                        let allTermsMatch = true;
+                        const palabrasPath = pathLower.replace(/([0-9]+)/g, ' $1 ').split(/[\s->/()]+/).filter(Boolean);
+
+                        queryTerms.forEach(term => {
+                            const termAsNum = parseInt(term);
+                            if (!isNaN(termAsNum) && term.length < 3) {
+                                const exactNumMatch = palabrasPath.some(p => parseInt(p) === termAsNum);
+                                if (!exactNumMatch) allTermsMatch = false;
+                            } else {
+                                if (!pathLower.includes(term)) allTermsMatch = false;
+                            }
+                        });
+
+                        if (allTermsMatch) {
+                            score += 50;
+                            let ultimoIndiceToken = -1;
+                            let esSecuencial = true;
+
+                            queryTerms.forEach(term => {
+                                let indiceEncontrado = -1;
+                                const termAsNum = parseInt(term);
+
+                                for (let i = ultimoIndiceToken + 1; i < palabrasPath.length; i++) {
+                                    const p = palabrasPath[i];
+                                    if (!isNaN(termAsNum) && term.length < 3) {
+                                        if (parseInt(p) === termAsNum) {
+                                            indiceEncontrado = i;
+                                            break;
+                                        }
+                                    } else if (p.includes(term)) {
+                                        indiceEncontrado = i;
+                                        break;
+                                    }
+                                }
+
+                                if (indiceEncontrado === -1) esSecuencial = false;
+                                else ultimoIndiceToken = indiceEncontrado;
+                            });
+
+                            if (esSecuencial) score += 400;
+                        }
+
+                        return { ...item, score, allTermsMatch };
+                    })
+                    .filter(item => item.allTermsMatch)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 8);
+
+                if (scoredMatches.length > 0) {
+                    resultsContainer.innerHTML = scoredMatches.map(m => {
+                        let highlightedNombre = m.nombre;
+                        queryTerms.forEach(term => {
+                            const regex = new RegExp(`(${term})`, 'gi');
+                            highlightedNombre = highlightedNombre.replace(regex, '<mark>$1</mark>');
+                        });
+
+                        return `
+                            <div class="search-result-item" onclick="seleccionarMaquinaGeneric('${m.path.replace(/'/g, "\\'")}', '${inputId}', '${resultsId}', '${containerId}', '${pathId}', '${valId}')">
+                                <strong>${highlightedNombre}</strong>
+                                <span class="path">${m.path}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    resultsContainer.style.display = 'block';
+                } else {
+                    resultsContainer.style.display = 'none';
+                }
+            });
+
+            // Cerrar al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.style.display = 'none';
+                }
+            });
+        }
+
+        window.seleccionarMaquinaGeneric = function (path, inputId, resultsId, containerId, pathId, valId) {
+            document.getElementById(inputId).value = path.split(' > ').pop();
+            document.getElementById(resultsId).style.display = 'none';
+            document.getElementById(valId).value = path;
+            document.getElementById(pathId).innerText = path;
+            document.getElementById(containerId).style.display = 'block';
+        };
+
+        window.seleccionarMaquinaDesdeBusqueda = function (path) {
+            if (targetMachineContext === 'donante') {
+                seleccionarMaquinaGeneric(path, 'inputBusquedaDonante', 'resultsDonante', 'containerDonante', 'pathDonante', 'valDonante');
+                // Al seleccionar origen, preguntamos si quiere seleccionar destino o habilitamos el siguiente campo
+                document.getElementById('inputBusquedaReceptora').focus();
+            } else {
+                seleccionarMaquinaGeneric(path, 'inputBusquedaReceptora', 'resultsReceptora', 'containerReceptora', 'pathReceptora', 'valReceptora');
+            }
+        };
+
+        // Lógica del Modal y el Árbol (Navegación directa)
+        const modal = document.getElementById('modalArbol');
+        const btnAbrir = document.getElementById('btnAbrirArbol');
+        const btnCerrar = document.getElementById('btnCerrarArbol');
+        const treeRoot = document.getElementById('treeRootModal');
+
+        window.setTargetContext = function (context) {
+            targetMachineContext = context;
+            document.getElementById('btnSelectDonante').classList.toggle('active', context === 'donante');
+            document.getElementById('btnSelectReceptora').classList.toggle('active', context === 'receptora');
+        };
+
+        btnAbrir.onclick = () => {
+            modal.style.display = 'block';
+            if (treeRoot.innerHTML === 'Cargando árbol...') {
+                renderizarArbolModal();
+            }
+        };
+
+        btnCerrar.onclick = () => modal.style.display = 'none';
+        window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
+
+        function renderizarArbolModal() {
+            if (!arbolCompleto || !arbolCompleto.divisiones) {
+                treeRoot.innerHTML = '<div style="padding:20px; color:red;">No hay datos cargados.</div>';
+                return;
+            }
+            treeRoot.innerHTML = '';
+            arbolCompleto.divisiones.forEach(div => {
+                treeRoot.appendChild(crearNodoTree(div.nombre, div.id || "DIV", div.hijos || [], ""));
+            });
+        }
+
+        function crearNodoTree(name, id, children, parentPath) {
+            const currentPath = parentPath ? `${parentPath} > ${name}` : name;
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'tree-node';
+
+            const hasChildren = children && children.length > 0;
+            if (!hasChildren) nodeDiv.classList.add('leaf');
+
+            const content = document.createElement('div');
+            content.className = 'node-content';
+            content.innerHTML = `
+                <div class="node-toggle">${hasChildren ? '▶' : ''}</div>
+                <span class="node-id">${id}</span>
+                <span class="node-name">${name}</span>
+                <button type="button" class="btn-select-node">Seleccionar</button>
+            `;
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children-container';
+
+            content.querySelector('.node-toggle').onclick = (e) => {
+                e.stopPropagation();
+                if (hasChildren && childrenContainer.innerHTML === '') {
+                    children.forEach(child => {
+                        childrenContainer.appendChild(crearNodoTree(child.nombre, child.id || "DIV", child.hijos || [], currentPath));
+                    });
+                }
+                e.target.classList.toggle('expanded');
+                childrenContainer.classList.toggle('active');
+            };
+
+            content.querySelector('.btn-select-node').onclick = (e) => {
+                e.stopPropagation();
+                seleccionarDesdeArbol(currentPath);
+            };
+
+            content.querySelector('.node-name').onclick = (e) => {
+                e.stopPropagation();
+                seleccionarDesdeArbol(currentPath);
+            };
+
+            nodeDiv.appendChild(content);
+            nodeDiv.appendChild(childrenContainer);
+            return nodeDiv;
+        }
+
+        function seleccionarDesdeArbol(path) {
+            window.seleccionarMaquinaDesdeBusqueda(path);
+            modal.style.display = 'none';
+        }
+
+
+
+        // Autocompletar fecha de registro y cargar equipos al cargar la página
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Cargar historial primero para que el usuario vea datos rápido
+            cargarHistorialIntegrado().catch(err => console.error("Error historial:", err));
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('fecha_registro').value = `${year}-${month}-${day}`;
+
+            // 2. Cargar equipos (proceso pesado)
+            cargarEquipos().catch(err => console.error("Error equipos:", err));
+
+            // 3. Inicializar autocompletados
+            try {
+                setupMachineAutocomplete('inputBusquedaDonante', 'resultsDonante', 'containerDonante', 'pathDonante', 'valDonante');
+                setupMachineAutocomplete('inputBusquedaReceptora', 'resultsReceptora', 'containerReceptora', 'pathReceptora', 'valReceptora');
+
+                setupAutocomplete('retirado_por', 'results_retirado');
+                setupAutocomplete('responsable_reposicion', 'results_responsable', 'Reliability Coordinator|Planner');
+                setupAutocomplete('personal_bodega', 'results_bodega');
+
+                actualizarEstadoPersonalBodega(false);
+            } catch (err) {
+                console.error("Error setup autocompletes:", err);
+            }
+
+            // 4. Configurar modal
+            try {
+                const btnAbrir = document.getElementById('btnAbrirArbol');
+                btnAbrir.onclick = () => {
+                    const modal = document.getElementById('modalArbol');
+                    modal.style.display = 'block';
+                    const treeRoot = document.getElementById('treeRootModal');
+                    if (treeRoot.innerHTML === 'Cargando árbol...') {
+                        renderizarArbolModal();
+                    }
+                };
+            } catch (err) {
+                console.error("Error setup modal:", err);
+            }
+
+            // 5. Eventos de búsqueda
+            document.getElementById('btnVolverABuscar').addEventListener('click', desactivarModoManual);
+
+            document.getElementById('btnBuscar').addEventListener('click', () => {
+                const query = document.getElementById('inputBusqueda').value;
+                const tipo = document.getElementById('tipoBusqueda').value;
+                if (tipo === 'sin_codigo') activarModoManual();
+                else realizarBusqueda(query, tipo);
+            });
+
+            document.getElementById('tipoBusqueda').addEventListener('change', (e) => {
+                const input = document.getElementById('inputBusqueda');
+                const btn = document.getElementById('btnBuscar');
+                document.getElementById('repuesto_descripcion').value = "";
+                document.getElementById('repuesto_codigo').value = "";
+                document.getElementById('codigo_bodega').value = "";
+                document.getElementById('stockStatusContainer').style.display = 'none';
+                actualizarEstadoPersonalBodega(false);
+
+                if (e.target.value === 'sin_codigo') activarModoManual();
+                else {
+                    input.placeholder = "Ingrese el valor a buscar...";
+                    input.disabled = false;
+                    btn.innerText = "Buscar en Inventario";
+                }
+            });
+        });
+
+        document.getElementById('canibalizacionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            if (data.cantidad) {
+                data.cantidad = parseInt(data.cantidad);
+            }
+
+            // Garantizar que personal_bodega se envíe como cadena vacía si no existe (por estar deshabilitado)
+            if (!data.hasOwnProperty('personal_bodega')) {
+                data.personal_bodega = "";
+            }
+
+            // Validar que se hayan seleccionado las máquinas
+            if (!data.maquina_donante || !data.maquina_receptora) {
+                alert('Debe seleccionar tanto la máquina origen como la destino usando el buscador o el explorador.');
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = 'Guardando...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/guardar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Registro guardado con éxito.');
+                    e.target.reset();
+                    document.getElementById('stockStatusContainer').style.display = 'none';
+                    
+                    const msc = document.getElementById('maquinaSeleccionadaContainer');
+                    if (msc) msc.style.display = 'none';
+                    
+                    const containerDonante = document.getElementById('containerDonante');
+                    if (containerDonante) containerDonante.style.display = 'none';
+                    const containerReceptora = document.getElementById('containerReceptora');
+                    if (containerReceptora) containerReceptora.style.display = 'none';
+
+                    actualizarEstadoPersonalBodega(false);
+
+                    // Actualizar historial integrado
+                    cargarHistorialIntegrado();
+                } else {
+                    alert('Error al guardar el registro.');
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert('Error de conexión.');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

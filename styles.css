@@ -1,0 +1,398 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #002855;
+    --primary-hover: #001a38;
+    --accent-yellow: #FFDD00;
+    --bg-color: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --input-focus: #002855;
+    --success: #10b981;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+    padding: 2rem 1rem;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 2.5rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+}
+
+header {
+    margin-bottom: 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-dashboard {
+    background: var(--primary-color);
+    color: var(--accent-yellow);
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 40, 85, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--accent-yellow);
+}
+
+.btn-dashboard:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 40, 85, 0.3);
+    color: #fff;
+}
+
+header > div {
+    text-align: left;
+}
+
+h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+p.subtitle {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+fieldset {
+    border: none;
+    margin-bottom: 2rem;
+    padding: 0;
+}
+
+legend {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--primary-color);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+legend::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+    margin-left: 1rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    background-color: #fff;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 40, 85, 0.1), 0 0 0 1px var(--accent-yellow);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 1.25rem;
+    background-color: var(--primary-color);
+    color: var(--accent-yellow);
+    border: 3px solid var(--accent-yellow);
+    border-radius: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: none;
+    outline: none;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--primary-hover);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
+button[type="submit"]:active {
+    transform: translateY(2px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    .full-width {
+        grid-column: span 1;
+    }
+    .container {
+        padding: 1.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Custom styles for stock verification */
+.input-with-button {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-with-button input {
+    flex: 1;
+}
+
+.btn-secondary {
+    padding: 0.75rem 1rem;
+    background-color: var(--text-muted);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #475569;
+}
+
+.stock-indicator {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    border: 1px solid var(--border-color);
+    background-color: #fff;
+}
+
+.stock-indicator.loading {
+    background-color: #f1f5f9;
+    color: var(--text-muted);
+    border-color: #cbd5e1;
+}
+
+.stock-indicator.success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #10b981;
+}
+
+.stock-indicator.warning {
+    background-color: #fffbeb;
+    color: #92400e;
+    border-color: #f59e0b;
+}
+
+.stock-indicator.error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444;
+}
+
+/* Unified Search Bar Styles */
+.unified-search-container {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: white;
+}
+
+.search-select {
+    width: auto;
+    border: none;
+    border-right: 1px solid var(--border-color);
+    border-radius: 0;
+    background-color: #f8fafc;
+    padding: 0 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-main);
+}
+
+.unified-search-container input {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+}
+
+.unified-search-container input:focus {
+    box-shadow: none;
+}
+
+/* Goodyear Brand Elements */
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.goodyear-logo {
+    height: 28px;
+    width: auto;
+}
+
+.brand-accent {
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--accent-yellow) 100%);
+    border-radius: 2px;
+    margin-top: 4px;
+}
+
+legend {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--primary-color);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+legend::before {
+    content: "";
+    width: 4px;
+    height: 18px;
+    background: var(--accent-yellow);
+    margin-right: 10px;
+    border-radius: 2px;
+}
+
+.btn-primary-search {
+    padding: 0 1.5rem;
+    background-color: var(--primary-color);
+    color: var(--accent-yellow);
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary-search:hover {
+    background-color: var(--primary-hover);
+    color: #fff;
+}
+
+mark {
+    background-color: #fef9c3;
+    color: #002855;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}
+
+/* Modal Target Selector Styles */
+.target-selector {
+    display: flex;
+    background: #f1f5f9;
+    padding: 0.4rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--border-color);
+    gap: 0.4rem;
+}
+
+.target-btn {
+    flex: 1;
+    border: none;
+    padding: 0.8rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    outline: none;
+}
+
+.target-btn.active {
+    background: var(--primary-color);
+    color: var(--accent-yellow);
+    box-shadow: 0 4px 12px rgba(0, 40, 85, 0.25);
+    border: 1px solid var(--accent-yellow);
+}
+
+.target-btn:hover:not(.active) {
+    background: #e2e8f0;
+    color: var(--primary-color);
+}

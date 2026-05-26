@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Equipos - Planta L504</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #002855;
+            --accent-yellow: #FFDD00;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #fef9c3;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .search-box {
+            position: relative;
+            width: 400px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--accent);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        /* Tree Styles */
+        .tree-node {
+            margin-left: 20px;
+            border-left: 1px solid var(--border);
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .node-content {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 2px 0;
+        }
+
+        .node-content:hover {
+            background: var(--bg);
+        }
+
+        .node-toggle {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .node-toggle.expanded {
+            transform: rotate(90deg);
+        }
+
+        .node-id {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            background: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .node-name {
+            font-weight: 500;
+        }
+
+        .children-container {
+            display: none;
+        }
+
+        .children-container.active {
+            display: block;
+        }
+
+        .leaf .node-toggle {
+            visibility: hidden;
+        }
+
+        .btn-select-node {
+            opacity: 0;
+            margin-left: auto;
+            padding: 4px 12px;
+            background: var(--primary);
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .node-content:hover .btn-select-node {
+            opacity: 1;
+        }
+
+        .btn-select-node:hover {
+            background: #001a38;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        .stats {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .highlight {
+            background-color: #fef08a !important;
+            border-radius: 4px;
+            box-shadow: 0 0 0 2px #fef08a;
+        }
+
+        .btn-back {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+
+        .btn-back:hover {
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-control {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-control:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--accent);
+        }
+
+        #noResults {
+            display: none;
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed var(--border);
+            margin-bottom: 20px;
+        }
+
+        .search-container-box {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 500px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-control {
+            flex: 1;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div>
+                    <a href="index.html" class="btn-back">← Volver al Registro</a>
+                    <h1>Dashboard de Equipos</h1>
+                </div>
+            </div>
+            <div class="search-container-box">
+                <div class="search-wrapper">
+                    <input type="text" id="busquedaArbol" placeholder="Buscar por nombre o ID (ej: Mixer)..."
+                        autocomplete="off">
+                </div>
+                <div class="controls">
+                    <button class="btn-control" id="btnExpandAll" onclick="expandAll()">📂 Expandir Todo</button>
+                    <button class="btn-control" id="btnCollapseAll" onclick="collapseAll()">📁 Colapsar Todo</button>
+                </div>
+            </div>
+        </header>
+
+        <div id="noResults">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">🔍</div>
+            <strong>No se encontraron equipos</strong><br>
+            Intenta con otros términos o verifica el ID.
+        </div>
+
+        <div class="card">
+            <div id="treeRoot">Cargando árbol de equipos...</div>
+        </div>
+
+        <div class="stats" id="stats">
+            Total de nodos cargados: ...
+        </div>
+    </div>
+
+    <script>
+        let totalNodes = 0;
+
+        async function cargarArbol() {
+            try {
+                const response = await fetch('arbol_equipos.json');
+                const data = await response.json();
+                renderTree(data);
+            } catch (error) {
+                document.getElementById('treeRoot').innerText = "Error al cargar los datos.";
+                console.error(error);
+            }
+        }
+
+        function renderTree(data) {
+            const root = document.getElementById('treeRoot');
+            root.innerHTML = '';
+            totalNodes = 0;
+
+            // Creamos el nodo raíz que contiene las divisiones
+            // Asumimos que data tiene 'nombre' y 'divisiones'
+            const mainName = data.nombre || "Planta L504";
+            const divisions = data.divisiones || [];
+
+            divisions.forEach(div => {
+                root.appendChild(createNode(div.nombre, div.id || "DIV", div.hijos || [], ""));
+            });
+
+            document.getElementById('stats').innerText = `Total de nodos registrados: ${totalNodes}`;
+        }
+
+        function createNode(name, id, children, parentPath = "") {
+            totalNodes++;
+            const currentPath = parentPath ? `${parentPath} > ${name}` : name;
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'tree-node';
+            
+            const hasChildren = children && children.length > 0;
+            if (!hasChildren) nodeDiv.classList.add('leaf');
+
+            const content = document.createElement('div');
+            content.className = 'node-content';
+            content.innerHTML = `
+                <div class="node-toggle">${hasChildren ? '▶' : ''}</div>
+                <span class="node-id">${id}</span>
+                <span class="node-name">${name}</span>
+                <button class="btn-select-node" onclick="seleccionarEquipo('${currentPath.replace(/'/g, "\\'")}')">Seleccionar</button>
+            `;
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children-container';
+
+            content.onclick = (e) => {
+                if (e.target.classList.contains('btn-select-node')) return;
+                e.stopPropagation();
+                
+                if (hasChildren && childrenContainer.innerHTML === '') {
+                    children.forEach(child => {
+                        childrenContainer.appendChild(createNode(child.nombre, child.id || "DIV", child.hijos || [], currentPath));
+                    });
+                }
+                
+                const toggle = content.querySelector('.node-toggle');
+                toggle.classList.toggle('expanded');
+                childrenContainer.classList.toggle('active');
+            };
+
+            nodeDiv.appendChild(content);
+            nodeDiv.appendChild(childrenContainer);
+            return nodeDiv;
+        }
+
+        function seleccionarEquipo(path) {
+            window.location.href = `index.html?maquina=${encodeURIComponent(path)}`;
+        }
+
+        // Buscador robusto
+        document.getElementById('busquedaArbol').addEventListener('input', (e) => {
+            const rawTerm = e.target.value.trim();
+            const term = rawTerm.toLowerCase();
+            const nodes = document.querySelectorAll('.node-content');
+            const noResults = document.getElementById('noResults');
+
+            let foundCount = 0;
+
+            // Limpiar estados previos si el término es corto
+            if (term.length < 2) {
+                nodes.forEach(node => node.classList.remove('highlight'));
+                if (term.length === 0) {
+                    noResults.style.display = 'none';
+                }
+                return;
+            }
+
+            nodes.forEach(node => {
+                // Buscamos solo en el nombre y el ID, ignorando el icono del toggle
+                const nodeName = node.querySelector('.node-name').textContent.toLowerCase();
+                const nodeId = node.querySelector('.node-id').textContent.toLowerCase();
+
+                if (nodeName.includes(term) || nodeId.includes(term)) {
+                    node.classList.add('highlight');
+                    foundCount++;
+
+                    // Expandir padres para mostrar el resultado
+                    let parentContainer = node.nextElementSibling; // children-container
+                    let currentParent = node.parentElement.parentElement; // children-container del nivel superior
+
+                    while (currentParent && currentParent.classList.contains('children-container')) {
+                        currentParent.classList.add('active');
+                        const toggle = currentParent.previousElementSibling.querySelector('.node-toggle');
+                        if (toggle) toggle.classList.add('expanded');
+                        currentParent = currentParent.parentElement.parentElement;
+                    }
+                } else {
+                    node.classList.remove('highlight');
+                }
+            });
+
+            noResults.style.display = (foundCount === 0 && term.length >= 2) ? 'block' : 'none';
+        });
+
+        function expandAll() {
+            document.querySelectorAll('.children-container').forEach(c => c.classList.add('active'));
+            document.querySelectorAll('.node-toggle').forEach(t => t.classList.add('expanded'));
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.children-container').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.node-toggle').forEach(t => t.classList.remove('expanded'));
+        }
+
+        cargarArbol();
+    </script>
+</body>
+
+</html>

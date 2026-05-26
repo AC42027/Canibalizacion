@@ -1,0 +1,16 @@
+{
+    "nombre": "Test Planta",
+    "divisiones": [
+        {
+            "id": "TEST-DIV",
+            "nombre": "DIVISION DE PRUEBA (CARGA RAPIDA)",
+            "hijos": [
+                {
+                    "id": "EQUIPO-TEST-01",
+                    "nombre": "EQUIPO DE PRUEBA 1",
+                    "hijos": []
+                }
+            ]
+        }
+    ]
+}
