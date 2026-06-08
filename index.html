@@ -19,6 +19,7 @@
                     <p class="subtitle">Formato oficial basado en PMAN-7503</p>
                 </div>
             </div>
+            <a href="history.html" class="btn-dashboard">Ir al Dashboard Completo ↗</a>
         </header>
 
         <form id="canibalizacionForm">
@@ -40,22 +41,14 @@
             <fieldset>
                 <legend>Flujo de Equipos (Canibalización)</legend>
 
-                <div style="text-align: center; margin-bottom: 1.5rem;">
-                    <button type="button" id="btnAbrirArbol" class="btn-dashboard"
-                        style="width: 100%; justify-content: center;">
-                        🔍 Abrir Explorador Visual de Equipos
-                    </button>
-                </div>
-
                 <div class="grid">
                     <!-- Máquina Donante -->
                     <div class="form-group">
                         <label>1. Máquina Donante (De donde se retira)</label>
-                        <div style="position: relative;">
-                            <input type="text" id="inputBusquedaDonante" placeholder="Buscar máquina origen..."
-                                autocomplete="off" style="width: 100%;">
-                            <div id="resultsDonante" class="search-results-list" style="display: none;"></div>
-                        </div>
+                        <button type="button" id="btnAbrirArbolDonante" class="btn-dashboard"
+                            style="width: 100%; justify-content: center; gap: 0.5rem;">
+                            🔍 Seleccionar Máquina Donante
+                        </button>
                         <div id="containerDonante" class="stock-indicator success"
                             style="display: none; margin-top: 0.5rem; font-size: 0.8rem;">
                             <strong>Origen:</strong> <span id="pathDonante"></span>
@@ -66,11 +59,10 @@
                     <!-- Máquina Receptora -->
                     <div class="form-group">
                         <label>2. Máquina Receptora (A donde se entrega)</label>
-                        <div style="position: relative;">
-                            <input type="text" id="inputBusquedaReceptora" placeholder="Buscar máquina destino..."
-                                autocomplete="off" style="width: 100%;">
-                            <div id="resultsReceptora" class="search-results-list" style="display: none;"></div>
-                        </div>
+                        <button type="button" id="btnAbrirArbolReceptora" class="btn-dashboard"
+                            style="width: 100%; justify-content: center; gap: 0.5rem;">
+                            🔍 Seleccionar Máquina Receptora
+                        </button>
                         <div id="containerReceptora" class="stock-indicator success"
                             style="display: none; margin-top: 0.5rem; font-size: 0.8rem;">
                             <strong>Destino:</strong> <span id="pathReceptora"></span>
@@ -214,33 +206,7 @@
 
         </form>
 
-        <!-- FORMATO A: VISTA INTEGRADA -->
-        <section id="integratedHistory"
-            style="margin-top: 4rem; border-top: 3px solid var(--accent-yellow); padding-top: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2
-                    style="font-size: 1.25rem; color: var(--primary-color); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
-                    Resumen de Actividad Reciente</h2>
-                <a href="history.html" class="btn-dashboard">Ir al Dashboard Completo ↗</a>
-            </div>
-            <div class="table-container-mini">
-                <table class="integrated-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Equipo / Máquina (Flujo)</th>
-                            <th style="width: 40%;">Repuesto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="integratedHistoryBody">
-                        <tr>
-                            <td colspan="3" style="text-align:center; padding: 2rem; color: var(--text-muted);">Cargando
-                                registros...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+
 
     </div>
 
@@ -248,19 +214,15 @@
     <div id="modalArbol" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 style="margin:0; font-size:1.25rem;">Explorador Visual de Equipos</h2>
+                <h2 id="modalArbolTitulo" style="margin:0; font-size:1.25rem;">Explorador Visual de Equipos</h2>
                 <button type="button" id="btnCerrarArbol" class="btn-close">&times;</button>
             </div>
-            <div class="modal-search">
-                <div class="target-selector">
-                    <button type="button" id="btnSelectDonante" class="target-btn active"
-                        onclick="setTargetContext('donante')">
-                        1. Máquina DONANTE
-                    </button>
-                    <button type="button" id="btnSelectReceptora" class="target-btn"
-                        onclick="setTargetContext('receptora')">
-                        2. Máquina RECEPTORA
-                    </button>
+            <div class="modal-search" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: #f8fafc;">
+                <div style="position: relative; width: 100%;">
+                    <input type="text" id="inputBuscarArbol" placeholder="🔍 Buscar equipo por nombre, tag o ubicación..." 
+                        style="width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); font-size: 0.9rem;" autocomplete="off">
+                    <div id="resultadosBusquedaArbol" class="autocomplete-results" 
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 0.5rem; z-index: 2100; box-shadow: var(--shadow-lg);"></div>
                 </div>
             </div>
             <div class="modal-body">
@@ -886,46 +848,7 @@
         }
 
 
-        // --- FUNCIONES DE CARGA ---
-        async function cargarHistorialIntegrado() {
-            console.log("Iniciando carga de historial integrado...");
-            const container = document.getElementById('integratedHistoryBody');
-            if (!container) return;
 
-            try {
-                const response = await fetch('/api/registros');
-                if (!response.ok) throw new Error("HTTP " + response.status);
-                const data = await response.json();
-                const registros = data.canibalizaciones || [];
-
-                if (registros.length === 0) {
-                    container.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 2rem; color: var(--text-muted);">No hay registros aún.</td></tr>';
-                    return;
-                }
-
-                const ultimos5 = registros.slice().reverse().slice(0, 5);
-                container.innerHTML = ultimos5.map(r => {
-                    const maquinaDisplay = r.maquina_receptora ? (r.maquina_receptora.split(' > ').pop() || r.maquina_receptora) : (r.maquina ? r.maquina.split(' > ').pop() : 'N/A');
-                    const flujoDisplay = r.maquina_donante ? `${r.maquina_donante.split(' > ').pop()} ➔ ${r.maquina_receptora.split(' > ').pop()}` : maquinaDisplay;
-
-                    const displayCodigo = (r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo)
-                        ? '<span style="color: #94a3b8; font-style: italic;">SIN CÓDIGO</span>'
-                        : `<strong>${r.repuesto_codigo}</strong>`;
-
-                    return `
-                        <tr onclick="window.location.href='detail.html?id=${r.id}'" style="cursor: pointer;">
-                            <td>${r.fecha}</td>
-                            <td title="${r.maquina_receptora || r.maquina || ''}">${flujoDisplay}</td>
-                            <td><strong>${r.repuesto_nombre || (r.repuesto_descripcion ? r.repuesto_descripcion.split(' ').slice(0, 4).join(' ') : 'N/A')}</strong><br><small>${displayCodigo}</small></td>
-                        </tr>
-                    `;
-                }).join('');
-                console.log("Historial integrado cargado con éxito.");
-            } catch (error) {
-                console.error("Error cargando historial:", error);
-                container.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 2rem; color: #ef4444;">Error al cargar datos.</td></tr>`;
-            }
-        }
 
         // Lógica de Autocompletado de Personal (LDAP)
         function setupAutocomplete(inputId, resultsId, roleFilter = null) {
@@ -1286,8 +1209,10 @@
         }
 
         window.seleccionarMaquinaGeneric = function (path, inputId, resultsId, containerId, pathId, valId) {
-            document.getElementById(inputId).value = path.split(' > ').pop();
-            document.getElementById(resultsId).style.display = 'none';
+            const inputEl = document.getElementById(inputId);
+            if (inputEl) inputEl.value = path.split(' > ').pop();
+            const resultsEl = document.getElementById(resultsId);
+            if (resultsEl) resultsEl.style.display = 'none';
             document.getElementById(valId).value = path;
             document.getElementById(pathId).innerText = path;
             document.getElementById(containerId).style.display = 'block';
@@ -1296,8 +1221,6 @@
         window.seleccionarMaquinaDesdeBusqueda = function (path) {
             if (targetMachineContext === 'donante') {
                 seleccionarMaquinaGeneric(path, 'inputBusquedaDonante', 'resultsDonante', 'containerDonante', 'pathDonante', 'valDonante');
-                // Al seleccionar origen, preguntamos si quiere seleccionar destino o habilitamos el siguiente campo
-                document.getElementById('inputBusquedaReceptora').focus();
             } else {
                 seleccionarMaquinaGeneric(path, 'inputBusquedaReceptora', 'resultsReceptora', 'containerReceptora', 'pathReceptora', 'valReceptora');
             }
@@ -1305,21 +1228,223 @@
 
         // Lógica del Modal y el Árbol (Navegación directa)
         const modal = document.getElementById('modalArbol');
-        const btnAbrir = document.getElementById('btnAbrirArbol');
+        const btnAbrirDonante = document.getElementById('btnAbrirArbolDonante');
+        const btnAbrirReceptora = document.getElementById('btnAbrirArbolReceptora');
         const btnCerrar = document.getElementById('btnCerrarArbol');
         const treeRoot = document.getElementById('treeRootModal');
+        const inputBuscarArbol = document.getElementById('inputBuscarArbol');
+        const resultadosBusquedaArbol = document.getElementById('resultadosBusquedaArbol');
 
         window.setTargetContext = function (context) {
             targetMachineContext = context;
-            document.getElementById('btnSelectDonante').classList.toggle('active', context === 'donante');
-            document.getElementById('btnSelectReceptora').classList.toggle('active', context === 'receptora');
+            const titulo = document.getElementById('modalArbolTitulo');
+            if (titulo) {
+                titulo.innerText = context === 'donante' 
+                    ? 'Explorador - Selección Máquina DONANTE' 
+                    : 'Explorador - Selección Máquina RECEPTORA';
+            }
         };
 
-        btnAbrir.onclick = () => {
-            modal.style.display = 'block';
-            if (treeRoot.innerHTML === 'Cargando árbol...') {
-                renderizarArbolModal();
+        function limpiarBuscadorArbol() {
+            if (inputBuscarArbol) inputBuscarArbol.value = '';
+            if (resultadosBusquedaArbol) {
+                resultadosBusquedaArbol.innerHTML = '';
+                resultadosBusquedaArbol.style.display = 'none';
             }
+        }
+
+        if (btnAbrirDonante) {
+            btnAbrirDonante.onclick = () => {
+                limpiarBuscadorArbol();
+                setTargetContext('donante');
+                modal.style.display = 'block';
+                if (treeRoot.innerHTML === 'Cargando árbol...') {
+                    renderizarArbolModal();
+                }
+            };
+        }
+
+        if (btnAbrirReceptora) {
+            btnAbrirReceptora.onclick = () => {
+                limpiarBuscadorArbol();
+                setTargetContext('receptora');
+                modal.style.display = 'block';
+                if (treeRoot.innerHTML === 'Cargando árbol...') {
+                    renderizarArbolModal();
+                }
+            };
+        }
+
+        // Búsqueda inteligente dentro del Explorador Visual
+        if (inputBuscarArbol && resultadosBusquedaArbol) {
+            let searchTimeout;
+            inputBuscarArbol.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                const query = inputBuscarArbol.value.toLowerCase().trim();
+
+                if (query.length < 3) {
+                    resultadosBusquedaArbol.style.display = 'none';
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    const queryTerms = query.split(/\s+/);
+                    const scoredMatches = arbolPlano
+                        .map(item => {
+                            let score = 0;
+                            const nombreLower = item.nombre.toLowerCase();
+                            const pathLower = item.path.toLowerCase();
+
+                            if (nombreLower.startsWith(queryTerms[0])) score += 100;
+
+                            const palabrasNombre = nombreLower.replace(/([0-9]+)/g, ' $1 ').split(/[\s-]+/).filter(Boolean);
+                            queryTerms.forEach(term => {
+                                if (palabrasNombre.includes(term)) {
+                                    score += 80;
+                                } else {
+                                    const termAsNum = parseInt(term);
+                                    if (!isNaN(termAsNum)) {
+                                        palabrasNombre.forEach(p => {
+                                            if (parseInt(p) === termAsNum) score += 70;
+                                        });
+                                    }
+                                }
+                            });
+
+                            let allTermsMatch = true;
+                            const palabrasPath = pathLower.replace(/([0-9]+)/g, ' $1 ').split(/[\s->/()]+/).filter(Boolean);
+
+                            queryTerms.forEach(term => {
+                                const termAsNum = parseInt(term);
+                                if (!isNaN(termAsNum) && term.length < 3) {
+                                    const exactNumMatch = palabrasPath.some(p => parseInt(p) === termAsNum);
+                                    if (!exactNumMatch) allTermsMatch = false;
+                                } else {
+                                    if (!pathLower.includes(term)) allTermsMatch = false;
+                                }
+                            });
+
+                            if (allTermsMatch) {
+                                score += 50;
+                                let ultimoIndiceToken = -1;
+                                let esSecuencial = true;
+
+                                queryTerms.forEach(term => {
+                                    let indiceEncontrado = -1;
+                                    const termAsNum = parseInt(term);
+
+                                    for (let i = ultimoIndiceToken + 1; i < palabrasPath.length; i++) {
+                                        const p = palabrasPath[i];
+                                        if (!isNaN(termAsNum) && term.length < 3) {
+                                            if (parseInt(p) === termAsNum) {
+                                                indiceEncontrado = i;
+                                                break;
+                                            }
+                                        } else if (p.includes(term)) {
+                                            indiceEncontrado = i;
+                                            break;
+                                        }
+                                    }
+
+                                    if (indiceEncontrado === -1) esSecuencial = false;
+                                    else ultimoIndiceToken = indiceEncontrado;
+                                });
+
+                                if (esSecuencial) score += 400;
+                            }
+
+                            return { ...item, score, allTermsMatch };
+                        })
+                        .filter(item => item.allTermsMatch)
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 8);
+
+                    if (scoredMatches.length > 0) {
+                        resultadosBusquedaArbol.innerHTML = scoredMatches.map(m => {
+                            let highlightedNombre = m.nombre;
+                            queryTerms.forEach(term => {
+                                const regex = new RegExp(`(${term})`, 'gi');
+                                highlightedNombre = highlightedNombre.replace(regex, '<mark>$1</mark>');
+                            });
+
+                            return `
+                                <div class="autocomplete-item" onclick="seleccionarDesdeBuscadorArbol('${m.path.replace(/'/g, "\\'")}')">
+                                    <span class="name">${highlightedNombre}</span>
+                                    <span class="title">${m.path}</span>
+                                </div>
+                            `;
+                        }).join('');
+                        resultadosBusquedaArbol.style.display = 'block';
+                    } else {
+                        resultadosBusquedaArbol.style.display = 'none';
+                    }
+                }, 150);
+            });
+
+            // Cerrar al hacer clic fuera del buscador
+            document.addEventListener('click', (e) => {
+                if (!inputBuscarArbol.contains(e.target) && !resultadosBusquedaArbol.contains(e.target)) {
+                    resultadosBusquedaArbol.style.display = 'none';
+                }
+            });
+        }
+
+        window.revelarYDestacarEnArbol = function (path) {
+            const parts = path.split(' > ');
+            let currentParent = document.getElementById('treeRootModal');
+            if (!currentParent) return;
+
+            let pathAcumulado = '';
+            
+            for (let i = 0; i < parts.length; i++) {
+                pathAcumulado = pathAcumulado ? `${pathAcumulado} > ${parts[i]}` : parts[i];
+                
+                let searchContainer = currentParent;
+                if (currentParent.classList.contains('children-container')) {
+                    searchContainer = currentParent;
+                } else if (currentParent.id === 'treeRootModal') {
+                    searchContainer = currentParent;
+                } else {
+                    searchContainer = currentParent.querySelector(':scope > .children-container');
+                }
+
+                if (!searchContainer) break;
+
+                const childrenNodes = Array.from(searchContainer.children);
+                const nodeDiv = childrenNodes.find(child => child.getAttribute('data-path') === pathAcumulado);
+
+                if (!nodeDiv) {
+                    console.warn(`No se pudo encontrar el nodo: ${pathAcumulado}`);
+                    break;
+                }
+
+                if (i < parts.length - 1) {
+                    const toggle = nodeDiv.querySelector(':scope > .node-content > .node-toggle');
+                    const childrenContainer = nodeDiv.querySelector(':scope > .children-container');
+                    
+                    if (toggle && childrenContainer) {
+                        if (!toggle.classList.contains('expanded') || childrenContainer.innerHTML === '') {
+                            toggle.click();
+                        }
+                    }
+                    currentParent = childrenContainer;
+                } else {
+                    // Resaltar nodo destino
+                    const contentDiv = nodeDiv.querySelector(':scope > .node-content');
+                    if (contentDiv) {
+                        document.querySelectorAll('.highlight-tree').forEach(el => el.classList.remove('highlight-tree'));
+                        contentDiv.classList.add('highlight-tree');
+                        setTimeout(() => {
+                            contentDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 150);
+                    }
+                }
+            }
+        };
+
+        window.seleccionarDesdeBuscadorArbol = function (path) {
+            if (resultadosBusquedaArbol) resultadosBusquedaArbol.style.display = 'none';
+            revelarYDestacarEnArbol(path);
         };
 
         btnCerrar.onclick = () => modal.style.display = 'none';
@@ -1340,6 +1465,7 @@
             const currentPath = parentPath ? `${parentPath} > ${name}` : name;
             const nodeDiv = document.createElement('div');
             nodeDiv.className = 'tree-node';
+            nodeDiv.setAttribute('data-path', currentPath);
 
             const hasChildren = children && children.length > 0;
             if (!hasChildren) nodeDiv.classList.add('leaf');
@@ -1391,8 +1517,7 @@
 
         // Autocompletar fecha de registro y cargar equipos al cargar la página
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Cargar historial primero para que el usuario vea datos rápido
-            cargarHistorialIntegrado().catch(err => console.error("Error historial:", err));
+
 
             const now = new Date();
             const year = now.getFullYear();
@@ -1405,9 +1530,6 @@
 
             // 3. Inicializar autocompletados
             try {
-                setupMachineAutocomplete('inputBusquedaDonante', 'resultsDonante', 'containerDonante', 'pathDonante', 'valDonante');
-                setupMachineAutocomplete('inputBusquedaReceptora', 'resultsReceptora', 'containerReceptora', 'pathReceptora', 'valReceptora');
-
                 setupAutocomplete('retirado_por', 'results_retirado');
                 setupAutocomplete('responsable_reposicion', 'results_responsable', 'Reliability Coordinator|Planner');
                 setupAutocomplete('personal_bodega', 'results_bodega');
@@ -1415,21 +1537,6 @@
                 actualizarEstadoPersonalBodega(false);
             } catch (err) {
                 console.error("Error setup autocompletes:", err);
-            }
-
-            // 4. Configurar modal
-            try {
-                const btnAbrir = document.getElementById('btnAbrirArbol');
-                btnAbrir.onclick = () => {
-                    const modal = document.getElementById('modalArbol');
-                    modal.style.display = 'block';
-                    const treeRoot = document.getElementById('treeRootModal');
-                    if (treeRoot.innerHTML === 'Cargando árbol...') {
-                        renderizarArbolModal();
-                    }
-                };
-            } catch (err) {
-                console.error("Error setup modal:", err);
             }
 
             // 5. Eventos de búsqueda
@@ -1508,8 +1615,7 @@
 
                     actualizarEstadoPersonalBodega(false);
 
-                    // Actualizar historial integrado
-                    cargarHistorialIntegrado();
+
                 } else {
                     alert('Error al guardar el registro.');
                 }

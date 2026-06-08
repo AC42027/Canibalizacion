@@ -85,33 +85,81 @@
             color: #fff;
         }
 
-        /* Stats Cards */
-        .stats-grid {
+        /* Stats Cards & Rows */
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .filter-row:last-of-type {
+            margin-bottom: 1.25rem;
+        }
+
+        .filter-row-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--primary);
+            width: 200px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-left: 4px solid var(--accent-yellow);
+            padding-left: 0.75rem;
+            line-height: 1.3;
+        }
+
+        .filter-row-cards {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
+            gap: 0.75rem;
+            flex: 1;
         }
 
         .stat-card {
             background: var(--card);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-card.clickable {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px -3px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .stat-card.clickable.active-filter {
+            background-color: #eff6ff;
+            border-color: var(--primary);
+            box-shadow: inset 0 0 0 2px var(--primary);
         }
 
         .stat-label {
             color: var(--text-muted);
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.2rem;
+            font-weight: 800;
             color: var(--text);
+            line-height: 1.2;
         }
 
         .stat-trend {
@@ -433,26 +481,55 @@
             </div>
         </header>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Canibalizaciones</div>
-                <div class="stat-value" id="totalCount">-</div>
-                <div class="stat-trend trend-up"><span>↑</span> 12% vs mes anterior</div>
+        <!-- Fila de Filtro de Registros -->
+        <div class="filter-row">
+            <div class="filter-row-title">Filtro Registro canibalizaciones</div>
+            <div class="filter-row-cards">
+                <div class="stat-card clickable active-filter" id="cardFilterTotal" onclick="toggleStatusFilter('TOTAL')" title="Ver todas las canibalizaciones">
+                    <div class="stat-label">Total Canibalizaciones</div>
+                    <div class="stat-value" id="totalCount">-</div>
+                </div>
+                <div class="stat-card clickable" id="cardFilterPending" onclick="toggleStatusFilter('PENDING')" title="Filtrar por Pendientes de Normalizar">
+                    <div class="stat-label">Pendientes de Normalizar</div>
+                    <div class="stat-value" id="pendingCount" style="color: var(--warning);">-</div>
+                </div>
+                <div class="stat-card clickable" id="cardFilterNormalized" onclick="toggleStatusFilter('NORMALIZED')" title="Filtrar por Normalizados">
+                    <div class="stat-label">Normalizados</div>
+                    <div class="stat-value" id="normalizedCount" style="color: var(--success);">-</div>
+                </div>
+                <div class="stat-card" id="cardActiveUser">
+                    <div class="stat-label">Usuario Activo</div>
+                    <div class="stat-value" id="activeUserVal" style="color: var(--primary);">-</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Pendientes de Normalizar</div>
-                <div class="stat-value" id="pendingCount" style="color: var(--warning);">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Normalizados</div>
-                <div class="stat-value" id="normalizedCount" style="color: var(--success);">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Usuario Activo</div>
-                <div class="stat-value" style="font-size: 1.1rem; color: var(--primary);">ac42027</div>
-            </div>
+        </div>
 
-        </div> <!-- Cierre correcto de stats-grid -->
+        <!-- Fila de Filtro de División -->
+        <div class="filter-row">
+            <div class="filter-row-title">Filtro por división</div>
+            <div class="filter-row-cards">
+                <div class="stat-card clickable" id="cardFilterDivA" onclick="toggleDivisionFilter('DIVISION A')" title="Filtrar por División A">
+                    <div class="stat-label" style="color: var(--primary);">División A</div>
+                    <div class="stat-value" id="divACount">-</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divADetails">0 normalizados</div>
+                </div>
+                <div class="stat-card clickable" id="cardFilterDivB" onclick="toggleDivisionFilter('DIVISION B')" title="Filtrar por División B">
+                    <div class="stat-label" style="color: var(--primary);">División B</div>
+                    <div class="stat-value" id="divBCount">-</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divBDetails">0 normalizados</div>
+                </div>
+                <div class="stat-card clickable" id="cardFilterFacilities" onclick="toggleDivisionFilter('FACILITIES')" title="Filtrar por Facilities">
+                    <div class="stat-label" style="color: var(--primary);">Facilities</div>
+                    <div class="stat-value" id="facilitiesCount">-</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="facilitiesDetails">0 normalizados</div>
+                </div>
+                <div class="stat-card clickable" id="cardFilterUtilities" onclick="toggleDivisionFilter('UTILITIES')" title="Filtrar por Utilities">
+                    <div class="stat-label" style="color: var(--primary);">Utilities</div>
+                    <div class="stat-value" id="utilitiesCount">-</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="utilitiesDetails">0 normalizados</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Búsqueda inteligente -->
         <div class="data-card" style="margin-bottom: 2rem; padding: 1.5rem;">
@@ -496,6 +573,20 @@
 
     <script>
         let todosLosRegistros = [];
+        let activeDivisionFilter = null;
+        let activeStatusFilter = null;
+
+        function obtenerDivision(r) {
+            const path = r.maquina_donante || r.maquina_receptora || r.maquina || '';
+            if (!path) return '';
+            const firstPart = path.split(' > ')[0] || '';
+            const upper = firstPart.trim().toUpperCase();
+            if (upper.includes('DIVISIÓN A') || upper.includes('DIVISION A')) return 'DIVISION A';
+            if (upper.includes('DIVISIÓN B') || upper.includes('DIVISION B')) return 'DIVISION B';
+            if (upper.includes('FACILITIES')) return 'FACILITIES';
+            if (upper.includes('UTILITIES')) return 'UTILITIES';
+            return upper;
+        }
 
         async function cargarDatos() {
             try {
@@ -507,6 +598,11 @@
                 actualizarKPIs(todosLosRegistros);
                 renderTable(todosLosRegistros);
 
+                // Mostrar usuario activo desde sessionStorage o default
+                const activeUser = sessionStorage.getItem('session_usuario') || 'ac42027';
+                const activeUserEl = document.getElementById('activeUserVal');
+                if (activeUserEl) activeUserEl.innerText = activeUser;
+
                 // Listeners para Filtros
                 document.getElementById('mainSearch').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') filtrarData();
@@ -517,11 +613,87 @@
             }
         }
 
+        function toggleDivisionFilter(division) {
+            if (activeDivisionFilter === division) {
+                activeDivisionFilter = null;
+            } else {
+                activeDivisionFilter = division;
+            }
+
+            const cards = {
+                'DIVISION A': 'cardFilterDivA',
+                'DIVISION B': 'cardFilterDivB',
+                'FACILITIES': 'cardFilterFacilities',
+                'UTILITIES': 'cardFilterUtilities'
+            };
+
+            for (const [div, cardId] of Object.entries(cards)) {
+                const card = document.getElementById(cardId);
+                if (card) {
+                    if (activeDivisionFilter === div) {
+                        card.classList.add('active-filter');
+                    } else {
+                        card.classList.remove('active-filter');
+                    }
+                }
+            }
+
+            filtrarData();
+        }
+
+        function toggleStatusFilter(statusType) {
+            if (statusType === 'TOTAL') {
+                activeStatusFilter = null;
+            } else if (statusType === 'PENDING') {
+                activeStatusFilter = activeStatusFilter === 'PENDING' ? null : 'PENDING';
+            } else if (statusType === 'NORMALIZED') {
+                activeStatusFilter = activeStatusFilter === 'NORMALIZED' ? null : 'NORMALIZED';
+            }
+
+            const cards = {
+                'TOTAL': 'cardFilterTotal',
+                'PENDING': 'cardFilterPending',
+                'NORMALIZED': 'cardFilterNormalized'
+            };
+
+            for (const [st, cardId] of Object.entries(cards)) {
+                const card = document.getElementById(cardId);
+                if (card) {
+                    if ((st === 'TOTAL' && activeStatusFilter === null) || (activeStatusFilter === st)) {
+                        card.classList.add('active-filter');
+                    } else {
+                        card.classList.remove('active-filter');
+                    }
+                }
+            }
+
+            filtrarData();
+        }
+
         function filtrarData() {
             const term = document.getElementById('mainSearch').value.toLowerCase();
             const statsDiv = document.getElementById('filterStats');
 
             const filtrados = todosLosRegistros.filter(r => {
+                // Filtro de División
+                if (activeDivisionFilter) {
+                    const rDiv = obtenerDivision(r);
+                    if (rDiv !== activeDivisionFilter) {
+                        return false;
+                    }
+                }
+
+                // Filtro de Estado
+                if (activeStatusFilter) {
+                    const isNormalized = r.normalizado === true || r.normalizado === 1;
+                    if (activeStatusFilter === 'PENDING' && isNormalized) {
+                        return false;
+                    }
+                    if (activeStatusFilter === 'NORMALIZED' && !isNormalized) {
+                        return false;
+                    }
+                }
+
                 return (
                     (r.maquina_donante || "").toLowerCase().includes(term) ||
                     (r.maquina_receptora || "").toLowerCase().includes(term) ||
@@ -533,19 +705,69 @@
                 );
             });
 
-            statsDiv.style.display = 'block';
-            statsDiv.innerText = `${filtrados.length} resultados encontrados`;
+            if (term || activeDivisionFilter || activeStatusFilter) {
+                let filterText = `${filtrados.length} resultados encontrados`;
+                let activeFilters = [];
+                if (activeDivisionFilter) {
+                    const readableName = activeDivisionFilter === 'DIVISION A' ? 'División A' :
+                                         activeDivisionFilter === 'DIVISION B' ? 'División B' :
+                                         activeDivisionFilter.charAt(0) + activeDivisionFilter.slice(1).toLowerCase();
+                    activeFilters.push(`Zona: ${readableName}`);
+                }
+                if (activeStatusFilter) {
+                    const statusName = activeStatusFilter === 'PENDING' ? 'Pendientes' : 'Normalizados';
+                    activeFilters.push(`Estado: ${statusName}`);
+                }
+                if (activeFilters.length > 0) {
+                    filterText += ` (Filtros: ${activeFilters.join(', ')})`;
+                }
+                statsDiv.style.display = 'block';
+                statsDiv.innerText = filterText;
+            } else {
+                statsDiv.style.display = 'none';
+            }
             renderTable(filtrados);
         }
 
         function actualizarKPIs(registros) {
-            document.getElementById('totalCount').innerText = registros.length;
+            document.getElementById('totalCount').innerText = todosLosRegistros.length;
 
-            const pendientes = registros.filter(r => !r.normalizado).length;
-            const normalizados = registros.filter(r => r.normalizado).length;
+            const pendientes = todosLosRegistros.filter(r => !r.normalizado).length;
+            const normalizados = todosLosRegistros.filter(r => r.normalizado).length;
 
             document.getElementById('pendingCount').innerText = pendientes;
             document.getElementById('normalizedCount').innerText = normalizados;
+
+            // Calcular KPIs para cada división
+            const stats = {
+                'DIVISION A': { total: 0, normalized: 0 },
+                'DIVISION B': { total: 0, normalized: 0 },
+                'FACILITIES': { total: 0, normalized: 0 },
+                'UTILITIES': { total: 0, normalized: 0 }
+            };
+
+            todosLosRegistros.forEach(r => {
+                const div = obtenerDivision(r);
+                if (stats[div] !== undefined) {
+                    stats[div].total++;
+                    if (r.normalizado === true || r.normalizado === 1) {
+                        stats[div].normalized++;
+                    }
+                }
+            });
+
+            // Actualizar DOM de divisiones
+            document.getElementById('divACount').innerText = stats['DIVISION A'].total;
+            document.getElementById('divADetails').innerText = `${stats['DIVISION A'].normalized} normalizados`;
+
+            document.getElementById('divBCount').innerText = stats['DIVISION B'].total;
+            document.getElementById('divBDetails').innerText = `${stats['DIVISION B'].normalized} normalizados`;
+
+            document.getElementById('facilitiesCount').innerText = stats['FACILITIES'].total;
+            document.getElementById('facilitiesDetails').innerText = `${stats['FACILITIES'].normalized} normalizados`;
+
+            document.getElementById('utilitiesCount').innerText = stats['UTILITIES'].total;
+            document.getElementById('utilitiesDetails').innerText = `${stats['UTILITIES'].normalized} normalizados`;
         }
 
         function renderTable(data) {
@@ -554,6 +776,15 @@
                 body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 4rem; color: var(--text-muted);">No se encontraron registros que coincidan con los filtros.</td></tr>';
                 return;
             }
+
+            const formatMaquinaCol = (path) => {
+                if (!path) return { maquina: 'N/A', division: 'N/A', area: 'N/A' };
+                const parts = path.split(' > ');
+                const maquina = parts.pop() || 'N/A';
+                const division = parts[0] || 'N/A';
+                const area = parts[1] || 'N/A';
+                return { maquina, division, area };
+            };
 
             body.innerHTML = data.slice().reverse().map(r => {
                 const tieneCodigo = r.repuesto_codigo && r.repuesto_codigo !== "SIN CÓDIGO" && r.repuesto_codigo.trim() !== "";
@@ -571,6 +802,10 @@
 
                 const toggleText = isNormalized ? "Revertir a Pendiente" : "Marcar Normalizado";
 
+                const donanteInfo = r.maquina_donante ? formatMaquinaCol(r.maquina_donante) : null;
+                const receptoraInfo = r.maquina_receptora ? formatMaquinaCol(r.maquina_receptora) : null;
+                const unicaInfo = r.maquina ? formatMaquinaCol(r.maquina) : null;
+
                 return `
                     <tr id="row-${r.id}" onclick="window.location.href='detail.html?id=${r.id}'" style="cursor: pointer;" class="history-row">
                         <td>
@@ -586,18 +821,27 @@
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 ${r.maquina_donante ? `
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 700; color: #991b1b;">${r.maquina_donante.split(' > ').pop()}</div>
-                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Origen</div>
+                                        <div style="font-weight: 700; color: #991b1b; font-size: 0.85rem;">${donanteInfo.maquina}</div>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.25; margin-top: 0.15rem;">
+                                            <b>Div:</b> ${donanteInfo.division}<br>
+                                            <b>Área:</b> ${donanteInfo.area}
+                                        </div>
                                     </div>
-                                    <div style="color: var(--primary); font-weight: 800;">➔</div>
+                                    <div style="color: var(--primary); font-weight: 800; font-size: 1rem; padding: 0 0.1rem;">➔</div>
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 700; color: #166534;">${r.maquina_receptora.split(' > ').pop()}</div>
-                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Destino</div>
+                                        <div style="font-weight: 700; color: #166534; font-size: 0.85rem;">${receptoraInfo.maquina}</div>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.25; margin-top: 0.15rem;">
+                                            <b>Div:</b> ${receptoraInfo.division}<br>
+                                            <b>Área:</b> ${receptoraInfo.area}
+                                        </div>
                                     </div>
                                 ` : `
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 700; color: var(--primary);">${(r.maquina || 'N/A').split(' > ').pop()}</div>
-                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Equipo Único (Histórico)</div>
+                                        <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">${unicaInfo ? unicaInfo.maquina : 'N/A'}</div>
+                                        <div style="font-size: 0.68rem; color: var(--text-muted); line-height: 1.25; margin-top: 0.15rem;">
+                                            <b>Div:</b> ${unicaInfo ? unicaInfo.division : 'N/A'}<br>
+                                            <b>Área:</b> ${unicaInfo ? unicaInfo.area : 'N/A'}
+                                        </div>
                                     </div>
                                 `}
                             </div>
@@ -641,12 +885,18 @@
 
         async function toggleStatus(id) {
             try {
-                const response = await fetch(`/api/normalizar/${id}`, { method: 'POST' });
+                const token = sessionStorage.getItem('session_token') || '';
+                const response = await fetch(`/api/normalizar/${id}`, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
                 if (response.ok) {
                     // Recargar datos para actualizar la vista
                     cargarDatos();
                 } else {
-                    alert('Error al actualizar el estado.');
+                    const data = await response.json();
+                    alert(data.detail || data.error || 'Error al actualizar el estado.');
                 }
             } catch (error) {
                 console.error("Error:", error);

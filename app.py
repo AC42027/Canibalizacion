@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -8,10 +8,29 @@ import uvicorn
 import os
 import requests
 from bs4 import BeautifulSoup
+import hashlib
+import uuid
+from datetime import datetime
+import time
+
+SESSION_TIMEOUT_SECONDS = 900  # 15 minutos
+ACTIVE_SESSIONS = {}  # token -> {"usuario": str, "rol": str, "nombre": str, "last_activity": float}
 
 app = FastAPI(title="Canibalización API")
 
 # Modelo de datos para validación
+class LoginRequest(BaseModel):
+    usuario: str
+    contrasena: str
+
+class EditDateRequest(BaseModel):
+    registro_id: str
+    nueva_fecha: str
+    token: str
+
+class NormalizarRequest(BaseModel):
+    token: str
+
 class Registro(BaseModel):
     id: Optional[str] = None
     fecha: str
@@ -44,6 +63,46 @@ def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
+
+@app.on_event("startup")
+async def startup_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Crear tabla de usuarios
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        usuario TEXT PRIMARY KEY,
+        contrasena_hash TEXT,
+        nombre TEXT,
+        rol TEXT
+    )
+    """)
+    # Crear tabla de historial de cambios
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS historial_cambios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        registro_id TEXT,
+        usuario TEXT,
+        fecha_cambio TEXT,
+        campo_modificado TEXT,
+        valor_anterior TEXT,
+        valor_nuevo TEXT
+    )
+    """)
+    
+    # Pre-poblar usuarios si no existen
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        def get_pwd_hash(password: str) -> str:
+            return hashlib.sha256(password.encode()).hexdigest()
+        cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
+                       ("planificador", get_pwd_hash("goodyear123"), "Planificador L504", "planificador"))
+        cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
+                       ("confiabilidad", get_pwd_hash("goodyear123"), "Ing. Confiabilidad L504", "ingeniero_confiabilidad"))
+        cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
+                       ("admin", get_pwd_hash("admin123"), "Administrador de Ingeniería", "admin"))
+    conn.commit()
+    conn.close()
 
 @app.get("/api/equipos")
 async def obtener_equipos():
@@ -141,10 +200,40 @@ async def guardar(registro: Registro):
         return {"error": f"Error interno: {str(e)}"}
 
 @app.post("/api/normalizar/{registro_id}")
-async def normalizar(registro_id: str):
+async def normalizar(registro_id: str, req: NormalizarRequest):
     if not os.path.exists(DB_FILE):
         return {"error": "No hay datos"}
     
+    # 1. Validar token
+    if req.token not in ACTIVE_SESSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión inválida o expirada"
+        )
+        
+    session = ACTIVE_SESSIONS[req.token]
+    
+    # Validar inactividad (15 min)
+    if time.time() - session.get("last_activity", 0) > SESSION_TIMEOUT_SECONDS:
+        del ACTIVE_SESSIONS[req.token]
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La sesión ha expirado por inactividad"
+        )
+        
+    # Actualizar actividad
+    session["last_activity"] = time.time()
+    
+    usuario = session["usuario"]
+    rol = session["rol"]
+    
+    # 2. Validar rol (solo planificador, ingeniero_confiabilidad o admin)
+    if rol not in ["planificador", "ingeniero_confiabilidad", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para cambiar el estado"
+        )
+        
     try:
         conn = get_db_connection()
         registro = conn.execute('SELECT normalizado FROM registros WHERE id = ?', (registro_id,)).fetchone()
@@ -156,12 +245,26 @@ async def normalizar(registro_id: str):
         nuevo_estado = 0 if registro["normalizado"] else 1
         
         conn.execute('UPDATE registros SET normalizado = ? WHERE id = ?', (nuevo_estado, registro_id))
+        
+        # 3. Registrar en historial de cambios
+        fecha_cambio = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        valor_anterior = "Normalizado" if registro["normalizado"] else "Pendiente"
+        valor_nuevo = "Pendiente" if registro["normalizado"] else "Normalizado"
+        
+        conn.execute("""
+            INSERT INTO historial_cambios (registro_id, usuario, fecha_cambio, campo_modificado, valor_anterior, valor_nuevo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (registro_id, session["nombre"], fecha_cambio, "normalizado", valor_anterior, valor_nuevo))
+        
         conn.commit()
         conn.close()
         
-        return {"mensaje": "Estado actualizado"}
+        return {"success": True, "mensaje": f"Estado actualizado a {valor_nuevo}"}
     except Exception as e:
-        return {"error": f"Error al actualizar estado: {str(e)}"}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al actualizar estado: {str(e)}"
+        )
 
 @app.delete("/api/registros/{registro_id}")
 async def eliminar_registro(registro_id: str):
@@ -311,6 +414,116 @@ async def buscar_personal(q: str, division: Optional[str] = None):
     except Exception as e:
         print(f"Error en búsqueda inteligente: {str(e)}")
         return []
+
+@app.post("/api/login")
+async def login(req: LoginRequest):
+    pwd_hash = hashlib.sha256(req.contrasena.encode()).hexdigest()
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM usuarios WHERE usuario = ? AND contrasena_hash = ?", 
+                        (req.usuario, pwd_hash)).fetchone()
+    conn.close()
+    
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario o contraseña incorrectos"
+        )
+        
+    token = str(uuid.uuid4())
+    user_dict = dict(user)
+    ACTIVE_SESSIONS[token] = {
+        "usuario": user_dict["usuario"],
+        "rol": user_dict["rol"],
+        "nombre": user_dict["nombre"],
+        "last_activity": time.time()
+    }
+    return {
+        "success": True,
+        "token": token,
+        "usuario": user_dict["usuario"],
+        "rol": user_dict["rol"],
+        "nombre": user_dict["nombre"]
+    }
+
+@app.post("/api/registros/editar_fecha")
+async def editar_fecha(req: EditDateRequest):
+    # 1. Validar token
+    if req.token not in ACTIVE_SESSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión inválida o expirada"
+        )
+        
+    session = ACTIVE_SESSIONS[req.token]
+    
+    # Validar inactividad (15 min)
+    if time.time() - session.get("last_activity", 0) > SESSION_TIMEOUT_SECONDS:
+        del ACTIVE_SESSIONS[req.token]
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La sesión ha expirado por inactividad"
+        )
+        
+    # Actualizar actividad
+    session["last_activity"] = time.time()
+    
+    usuario = session["usuario"]
+    rol = session["rol"]
+    
+    # 2. Validar rol (solo planificador, ingeniero_confiabilidad o admin)
+    if rol not in ["planificador", "ingeniero_confiabilidad", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para editar la fecha de reposición"
+        )
+        
+    conn = get_db_connection()
+    # 3. Obtener valor anterior
+    registro = conn.execute("SELECT tiempo_reposicion FROM registros WHERE id = ?", (req.registro_id,)).fetchone()
+    if registro is None:
+        conn.close()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Registro no encontrado"
+        )
+        
+    valor_anterior = registro["tiempo_reposicion"]
+    
+    # 4. Actualizar fecha
+    conn.execute("UPDATE registros SET tiempo_reposicion = ? WHERE id = ?", (req.nueva_fecha, req.registro_id))
+    
+    # 5. Insertar en historial_cambios
+    fecha_cambio = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("""
+        INSERT INTO historial_cambios (registro_id, usuario, fecha_cambio, campo_modificado, valor_anterior, valor_nuevo)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (req.registro_id, session["nombre"], fecha_cambio, "tiempo_reposicion", valor_anterior, req.nueva_fecha))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "mensaje": "Fecha estimada de reposición actualizada con éxito"}
+
+@app.post("/api/logout")
+async def logout(body: dict = Body(...)):
+    token = body.get("token")
+    if token in ACTIVE_SESSIONS:
+        del ACTIVE_SESSIONS[token]
+    return {"success": True, "mensaje": "Sesión cerrada correctamente"}
+
+@app.get("/api/registros/{registro_id}/historial")
+async def obtener_historial(registro_id: str):
+    conn = get_db_connection()
+    cambios = conn.execute("""
+        SELECT usuario, fecha_cambio, campo_modificado, valor_anterior, valor_nuevo 
+        FROM historial_cambios 
+        WHERE registro_id = ? 
+        ORDER BY id DESC
+    """, (registro_id,)).fetchall()
+    conn.close()
+    
+    lista_cambios = [dict(c) for c in cambios]
+    return {"historial": lista_cambios}
 
 # Servir archivos estáticos (index.html, styles.css)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
