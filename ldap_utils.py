@@ -55,6 +55,7 @@ def get_emails_for_role(role_name: str) -> list:
             search_filter = "(&(objectCategory=person)(objectClass=user)(title=Planner)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT))"
         elif role_name == 'etl':
             search_filter = ("(&(objectCategory=person)(objectClass=user)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT)"
+                             "(department=*ENGINEERING*)"
                              "(|(title=Reliability Manager)(title=Maintenance Engineer)(title=Utilities Coordinator)(title=Facilities Coordinator)))")
         elif role_name == 'bodega':
             search_filter = "(&(objectCategory=person)(objectClass=user)(title=Store Room Specialist)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT))"
