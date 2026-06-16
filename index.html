@@ -158,10 +158,10 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Responsable por Reponer (PL\ING. MTTO)</label>
+                        <label>Planner Responsable (PL)</label>
                         <div class="autocomplete-container">
                             <input type="text" name="responsable_reposicion" id="responsable_reposicion"
-                                placeholder="Nombre del responsable" required autocomplete="off">
+                                placeholder="Nombre del Planner" required autocomplete="off">
                             <div id="results_responsable" class="autocomplete-results"></div>
                         </div>
                         <div id="email_responsable_container"
@@ -169,6 +169,20 @@
                             <i class="bi bi-envelope"></i> <span id="val_correo_responsable">-</span>
                             <input type="hidden" name="correo_responsable" id="correo_responsable">
                             <input type="hidden" name="cargo_responsable" id="cargo_responsable">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ingeniero de Mantenimiento (ING. MTTO)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" name="ing_mantenimiento" id="ing_mantenimiento"
+                                placeholder="Nombre del Ingeniero de Mantenimiento" required autocomplete="off">
+                            <div id="results_ing_mantenimiento" class="autocomplete-results"></div>
+                        </div>
+                        <div id="email_ing_mantenimiento_container"
+                            style="display:none; margin-top:0.5rem; font-size:0.75rem; color:var(--primary-color);">
+                            <i class="bi bi-envelope"></i> <span id="val_correo_ing_mantenimiento">-</span>
+                            <input type="hidden" name="correo_ing_mantenimiento" id="correo_ing_mantenimiento">
+                            <input type="hidden" name="cargo_ing_mantenimiento" id="cargo_ing_mantenimiento">
                         </div>
                     </div>
                     <div class="form-group">
@@ -1028,6 +1042,29 @@
                 }
                 cargoInput.value = displayTitle;
             }
+
+            // Lógica para el Ingeniero de Mantenimiento
+            if (inputId === 'ing_mantenimiento') {
+                const emailCont = document.getElementById('email_ing_mantenimiento_container');
+                const emailVal = document.getElementById('val_correo_ing_mantenimiento');
+                const emailInput = document.getElementById('correo_ing_mantenimiento');
+                const cargoInput = document.getElementById('cargo_ing_mantenimiento');
+
+                if (person.email) {
+                    emailCont.style.display = 'block';
+                    emailVal.innerText = person.email;
+                    emailInput.value = person.email;
+                }
+
+                // Limpiar y asignar cargo
+                let displayTitle = person.title || 'Ing. Mantenimiento';
+                if (displayTitle.includes('•')) displayTitle = displayTitle.split('•')[0].trim();
+                else if (displayTitle.includes('-')) {
+                    const parts = displayTitle.split('-');
+                    if (parts.length > 1) displayTitle = parts[0].trim();
+                }
+                cargoInput.value = displayTitle;
+            }
             
             // Actualizar destinatarios al seleccionar técnico o responsable
             actualizarListaDestinatarios();
@@ -1096,6 +1133,9 @@
             
             const correoTecnico = document.getElementById('correo_tecnico')?.value || '';
             const nombreTecnico = document.getElementById('retirado_por')?.value || '';
+
+            const correoIng = document.getElementById('correo_ing_mantenimiento')?.value || '';
+            const nombreIng = document.getElementById('ing_mantenimiento')?.value || '';
             
             const codigoBodega = document.getElementById('codigo_bodega')?.value || '';
             const tieneBodega = codigoBodega && codigoBodega.trim() !== "" && !codigoBodega.includes("SIN UBICACIÓN");
@@ -1139,6 +1179,19 @@
                     nombre: nombreTecnico || 'Técnico',
                     correo: correoTecnico,
                     rol: 'Retirado por',
+                    classRol: 'role-tecnico'
+                });
+            }
+
+            // 2.b Ingeniero de Mantenimiento
+            if (correoIng) {
+                if (userCheckedStates[correoIng] === undefined) {
+                    userCheckedStates[correoIng] = true;
+                }
+                lista.push({
+                    nombre: nombreIng || 'Ing. Mtto',
+                    correo: correoIng,
+                    rol: 'Ing Mtto',
                     classRol: 'role-tecnico'
                 });
             }
@@ -1727,10 +1780,12 @@
             try {
                 setupAutocomplete('retirado_por', 'results_retirado');
                 setupAutocomplete('responsable_reposicion', 'results_responsable', 'Reliability Coordinator|Planner');
+                setupAutocomplete('ing_mantenimiento', 'results_ing_mantenimiento', 'Maintenance Engineer');
                 setupAutocomplete('personal_bodega', 'results_bodega');
 
                 setupManualLookup('retirado_por', 'results_retirado');
                 setupManualLookup('responsable_reposicion', 'results_responsable');
+                setupManualLookup('ing_mantenimiento', 'results_ing_mantenimiento');
 
                 actualizarEstadoPersonalBodega(false);
                 inicializarDestinatarios();

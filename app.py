@@ -79,7 +79,9 @@ def enviar_correo_aviso(registro: dict):
             destinatarios.append(registro["correo_responsable"])
             
         # b. Ing Mtto
-        if registro.get("correo_tecnico"):
+        if registro.get("correo_ing_mantenimiento"):
+            destinatarios.append(registro["correo_ing_mantenimiento"])
+        elif registro.get("correo_tecnico"):
             destinatarios.append(registro["correo_tecnico"])
             
         # c. ETL
@@ -183,6 +185,10 @@ def enviar_correo_aviso(registro: dict):
                         <td class="value">{registro.get('responsable_reposicion', 'N/A')} ({registro.get('correo_responsable', 'N/A')})</td>
                     </tr>
                     <tr>
+                        <td class="label">Ing. Mantenimiento:</td>
+                        <td class="value">{registro.get('ing_mantenimiento', 'N/A')} ({registro.get('correo_ing_mantenimiento', 'N/A')})</td>
+                    </tr>
+                    <tr>
                         <td class="label">Fecha Compromiso:</td>
                         <td class="value" style="font-weight: bold; color: #b91c1c;">{registro.get('tiempo_reposicion', 'N/A')}</td>
                     </tr>
@@ -243,6 +249,9 @@ class Registro(BaseModel):
     usuario_registro: Optional[str] = None
     normalizado: bool = False
     destinatarios_notificacion: Optional[list] = None
+    ing_mantenimiento: Optional[str] = None
+    cargo_ing_mantenimiento: Optional[str] = None
+    correo_ing_mantenimiento: Optional[str] = None
 
 DB_FILE = "canibalizacion.db"
 
@@ -288,6 +297,14 @@ async def startup_db():
                        ("confiabilidad", get_pwd_hash("goodyear123"), "Ing. Confiabilidad L504", "ingeniero_confiabilidad"))
         cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
                        ("admin", get_pwd_hash("admin123"), "Administrador de Ingeniería", "admin"))
+    # Upgrade registros table to include ing_mantenimiento fields if they don't exist
+    cursor.execute("PRAGMA table_info(registros)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if "ing_mantenimiento" not in columns:
+        cursor.execute("ALTER TABLE registros ADD COLUMN ing_mantenimiento TEXT")
+        cursor.execute("ALTER TABLE registros ADD COLUMN cargo_ing_mantenimiento TEXT")
+        cursor.execute("ALTER TABLE registros ADD COLUMN correo_ing_mantenimiento TEXT")
+        
     conn.commit()
     conn.close()
 
@@ -362,8 +379,9 @@ async def guardar(registro: Registro, background_tasks: BackgroundTasks):
                 repuesto_codigo, repuesto_nombre, repuesto_descripcion, cantidad, razon, 
                 orden_trabajo, retirado_por, cargo_tecnico, correo_tecnico, plan_accion, 
                 tiempo_reposicion, responsable_reposicion, cargo_responsable, correo_responsable, 
-                personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado,
+                ing_mantenimiento, cargo_ing_mantenimiento, correo_ing_mantenimiento
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             nuevo_registro["id"], nuevo_registro.get("fecha", ""), nuevo_registro.get("fecha_registro", ""),
             nuevo_registro.get("maquina_donante", ""), nuevo_registro.get("maquina_receptora", ""),
@@ -376,7 +394,9 @@ async def guardar(registro: Registro, background_tasks: BackgroundTasks):
             nuevo_registro.get("cargo_responsable", ""), nuevo_registro.get("correo_responsable", ""),
             nuevo_registro.get("personal_bodega", ""), nuevo_registro.get("comentarios", ""),
             nuevo_registro.get("codigo_bodega", ""), nuevo_registro.get("usuario_registro", ""),
-            1 if nuevo_registro.get("normalizado", False) else 0
+            1 if nuevo_registro.get("normalizado", False) else 0,
+            nuevo_registro.get("ing_mantenimiento", ""), nuevo_registro.get("cargo_ing_mantenimiento", ""),
+            nuevo_registro.get("correo_ing_mantenimiento", "")
         ))
         
         conn.commit()
