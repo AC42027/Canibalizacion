@@ -194,6 +194,13 @@
             </fieldset>
 
             <fieldset>
+                <legend>Destinatarios de Notificación por Correo</legend>
+                <div class="destinatarios-grid" id="destinatarios_checklist_container">
+                    <!-- Rellenado dinámicamente por JavaScript -->
+                </div>
+            </fieldset>
+
+            <fieldset>
                 <legend>Notas Adicionales</legend>
                 <div class="form-group">
                     <textarea name="comentarios" placeholder="Observaciones opcionales..."></textarea>
@@ -714,6 +721,7 @@
             }
 
             actualizarEstadoPersonalBodega(true);
+            actualizarListaDestinatarios();
         }
 
         // Búsqueda por botón (ya no es automática)
@@ -769,6 +777,7 @@
             btnVolver.style.display = 'inline-block';
 
             actualizarEstadoPersonalBodega(false);
+            actualizarListaDestinatarios();
         }
 
         // Función para desactivar modo manual y volver a buscar
@@ -813,6 +822,7 @@
             tipoBusqueda.dispatchEvent(new Event('change'));
 
             actualizarEstadoPersonalBodega(false);
+            actualizarListaDestinatarios();
         }
 
         // Controla si se requiere o no el personal de bodega según la existencia del código
@@ -944,6 +954,31 @@
             });
         }
 
+        function setupManualLookup(inputId, resultsId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            input.addEventListener('change', async () => {
+                const val = input.value.trim();
+                if (val.length >= 3) {
+                    try {
+                        const res = await fetch(`/api/personal?q=${encodeURIComponent(val)}`);
+                        const data = await res.json();
+                        if (data && data.length > 0) {
+                            const match = data.find(p => 
+                                (p.user && p.user.toLowerCase() === val.toLowerCase()) || 
+                                p.displayName.toLowerCase() === val.toLowerCase()
+                            ) || data[0];
+                            
+                            seleccionarPersona(inputId, resultsId, match);
+                        }
+                    } catch (e) {
+                        console.error("Error al buscar datos del usuario en LDAP:", e);
+                    }
+                }
+            });
+        }
+
         window.seleccionarPersona = async function (inputId, resultsId, person) {
             document.getElementById(inputId).value = person.displayName;
             document.getElementById(resultsId).style.display = 'none';
@@ -993,6 +1028,9 @@
                 }
                 cargoInput.value = displayTitle;
             }
+            
+            // Actualizar destinatarios al seleccionar técnico o responsable
+            actualizarListaDestinatarios();
         };
 
         async function buscarCorreoJefe(bossId, bossName) {
@@ -1017,10 +1055,167 @@
                         }
                     }
                 }
+                actualizarListaDestinatarios();
             } catch (err) {
                 console.error("Error buscando correo del jefe:", err);
             }
         }
+
+        // Lógica de Destinatarios de Notificación por Correo
+        let ldapETL = [];
+        let ldapBodega = [];
+        let userCheckedStates = {};
+
+        async function inicializarDestinatarios() {
+            try {
+                const res = await fetch('/api/destinatarios_disponibles');
+                const data = await res.json();
+                ldapETL = data.etl || [];
+                ldapBodega = data.bodega || [];
+                
+                // Inicializar estados por defecto
+                ldapETL.forEach(m => {
+                    if (m.correo) userCheckedStates[m.correo] = true;
+                });
+                ldapBodega.forEach(m => {
+                    if (m.correo) userCheckedStates[m.correo] = false; // por defecto sin código de bodega
+                });
+                
+                actualizarListaDestinatarios();
+            } catch (err) {
+                console.error("Error al cargar destinatarios LDAP:", err);
+            }
+        }
+
+        function actualizarListaDestinatarios() {
+            const container = document.getElementById('destinatarios_checklist_container');
+            if (!container) return;
+
+            const correoResponsable = document.getElementById('correo_responsable')?.value || '';
+            const nombreResponsable = document.getElementById('responsable_reposicion')?.value || '';
+            
+            const correoTecnico = document.getElementById('correo_tecnico')?.value || '';
+            const nombreTecnico = document.getElementById('retirado_por')?.value || '';
+            
+            const codigoBodega = document.getElementById('codigo_bodega')?.value || '';
+            const tieneBodega = codigoBodega && codigoBodega.trim() !== "" && !codigoBodega.includes("SIN UBICACIÓN");
+
+            // Guardar estados actuales para no pisar selecciones manuales del usuario
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                userCheckedStates[cb.value] = cb.checked;
+            });
+
+            // Si cambió el estado de "tieneBodega", actualizamos los de bodega de acuerdo a eso
+            const anteriorTieneBodega = container.getAttribute('data-tiene-bodega') === 'true';
+            if (!container.hasAttribute('data-tiene-bodega') || anteriorTieneBodega !== tieneBodega) {
+                ldapBodega.forEach(m => {
+                    if (m.correo) userCheckedStates[m.correo] = tieneBodega;
+                });
+            }
+            container.setAttribute('data-tiene-bodega', tieneBodega ? 'true' : 'false');
+
+            const lista = [];
+
+            // 1. Planner / Responsable
+            if (correoResponsable) {
+                if (userCheckedStates[correoResponsable] === undefined) {
+                    userCheckedStates[correoResponsable] = true;
+                }
+                lista.push({
+                    nombre: nombreResponsable || 'Responsable',
+                    correo: correoResponsable,
+                    rol: 'Planner',
+                    classRol: 'role-planner'
+                });
+            }
+
+            // 2. Técnico
+            if (correoTecnico) {
+                if (userCheckedStates[correoTecnico] === undefined) {
+                    userCheckedStates[correoTecnico] = true;
+                }
+                lista.push({
+                    nombre: nombreTecnico || 'Técnico',
+                    correo: correoTecnico,
+                    rol: 'Retirado por',
+                    classRol: 'role-tecnico'
+                });
+            }
+
+            // 3. ETL
+            ldapETL.forEach(m => {
+                if (m.correo) {
+                    if (userCheckedStates[m.correo] === undefined) {
+                        userCheckedStates[m.correo] = true;
+                    }
+                    lista.push({
+                        nombre: m.nombre,
+                        correo: m.correo,
+                        rol: 'ETL',
+                        classRol: 'role-etl'
+                    });
+                }
+            });
+
+            // 4. Bodega
+            ldapBodega.forEach(m => {
+                if (m.correo) {
+                    if (userCheckedStates[m.correo] === undefined) {
+                        userCheckedStates[m.correo] = tieneBodega;
+                    }
+                    lista.push({
+                        nombre: m.nombre,
+                        correo: m.correo,
+                        rol: 'Bodega',
+                        classRol: 'role-bodega'
+                    });
+                }
+            });
+
+            if (lista.length === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Complete los campos del formulario para ver los destinatarios...</p>`;
+                return;
+            }
+
+            container.innerHTML = lista.map(item => {
+                const isChecked = userCheckedStates[item.correo] ? 'checked' : '';
+                const isCheckedAttr = userCheckedStates[item.correo] ? 'checked' : '';
+                return `
+                    <div class="destinatario-card ${isChecked}" onclick="toggleDestinatarioCard(this)">
+                        <input type="checkbox" value="${item.correo}" ${isCheckedAttr} onclick="event.stopPropagation(); handleCheckboxChange(this)">
+                        <div class="destinatario-info">
+                            <span class="destinatario-name" title="${item.nombre}">${item.nombre}</span>
+                            <span class="destinatario-email" title="${item.correo}">${item.correo}</span>
+                            <span class="destinatario-role ${item.classRol}">${item.rol}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.toggleDestinatarioCard = function(card) {
+            const cb = card.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = !cb.checked;
+                if (cb.checked) {
+                    card.classList.add('checked');
+                } else {
+                    card.classList.remove('checked');
+                }
+                userCheckedStates[cb.value] = cb.checked;
+            }
+        };
+
+        window.handleCheckboxChange = function(cb) {
+            const card = cb.closest('.destinatario-card');
+            if (cb.checked) {
+                card.classList.add('checked');
+            } else {
+                card.classList.remove('checked');
+            }
+            userCheckedStates[cb.value] = cb.checked;
+        };
 
 
         // Lógica de Filtros en Cascada (Equipos)
@@ -1534,7 +1729,11 @@
                 setupAutocomplete('responsable_reposicion', 'results_responsable', 'Reliability Coordinator|Planner');
                 setupAutocomplete('personal_bodega', 'results_bodega');
 
+                setupManualLookup('retirado_por', 'results_retirado');
+                setupManualLookup('responsable_reposicion', 'results_responsable');
+
                 actualizarEstadoPersonalBodega(false);
+                inicializarDestinatarios();
             } catch (err) {
                 console.error("Error setup autocompletes:", err);
             }
@@ -1588,6 +1787,13 @@
                 return;
             }
 
+            // Recopilar destinatarios de notificación seleccionados
+            const destinatarios = [];
+            document.querySelectorAll('#destinatarios_checklist_container input[type="checkbox"]:checked').forEach(cb => {
+                destinatarios.push(cb.value);
+            });
+            data.destinatarios_notificacion = destinatarios;
+
             const submitBtn = e.target.querySelector('button');
             const originalText = submitBtn.innerText;
             submitBtn.innerText = 'Guardando...';
@@ -1614,7 +1820,10 @@
                     if (containerReceptora) containerReceptora.style.display = 'none';
 
                     actualizarEstadoPersonalBodega(false);
-
+                    
+                    // Resetear selección de destinatarios
+                    userCheckedStates = {};
+                    inicializarDestinatarios();
 
                 } else {
                     alert('Error al guardar el registro.');

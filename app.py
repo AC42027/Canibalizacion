@@ -67,25 +67,30 @@ def enviar_correo(subject: str, html_body: str, to_emails: list):
         return False
 
 def enviar_correo_aviso(registro: dict):
-    destinatarios = []
-    
-    # a. Planner
-    if registro.get("correo_responsable"):
-        destinatarios.append(registro["correo_responsable"])
+    # Si la petición incluye una lista explícita de destinatarios seleccionados, la usamos directamente
+    if registro.get("destinatarios_notificacion") and isinstance(registro["destinatarios_notificacion"], list):
+        destinatarios = registro["destinatarios_notificacion"]
+    else:
+        # Fallback de resolución automática si no viene la lista
+        destinatarios = []
         
-    # b. Ing Mtto
-    if registro.get("correo_tecnico"):
-        destinatarios.append(registro["correo_tecnico"])
+        # a. Planner
+        if registro.get("correo_responsable"):
+            destinatarios.append(registro["correo_responsable"])
+            
+        # b. Ing Mtto
+        if registro.get("correo_tecnico"):
+            destinatarios.append(registro["correo_tecnico"])
+            
+        # c. ETL
+        etl_emails = get_emails_for_role('etl')
+        destinatarios.extend(etl_emails)
         
-    # c. ETL
-    etl_emails = get_emails_for_role('etl')
-    destinatarios.extend(etl_emails)
-    
-    # d. Planificador de bodega (solo si existe código de bodega)
-    codigo_bodega = registro.get("codigo_bodega") or ""
-    if codigo_bodega.strip():
-        bodega_emails = get_emails_for_role('bodega')
-        destinatarios.extend(bodega_emails)
+        # d. Planificador de bodega (solo si existe código de bodega)
+        codigo_bodega = registro.get("codigo_bodega") or ""
+        if codigo_bodega.strip():
+            bodega_emails = get_emails_for_role('bodega')
+            destinatarios.extend(bodega_emails)
         
     destinatarios = list(set([d.strip() for d in destinatarios if d and "@" in d]))
     if not destinatarios:
@@ -237,6 +242,7 @@ class Registro(BaseModel):
     codigo_bodega: Optional[str] = None
     usuario_registro: Optional[str] = None
     normalizado: bool = False
+    destinatarios_notificacion: Optional[list] = None
 
 DB_FILE = "canibalizacion.db"
 
@@ -585,6 +591,7 @@ async def buscar_personal(q: str, division: Optional[str] = None):
                     
                     if nombre and len(nombre) > 3:
                         final_results.append({
+                            "user": user_id,
                             "displayName": nombre,
                             "title": title,
                             "email": email,
@@ -712,6 +719,22 @@ async def obtener_historial(registro_id: str):
 
 # Servir archivos estáticos (index.html, styles.css)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
+@app.get("/api/destinatarios_disponibles")
+async def obtener_destinatarios_disponibles():
+    from ldap_utils import get_members_for_role
+    try:
+        etl_members = get_members_for_role('etl')
+        bodega_members = get_members_for_role('bodega')
+        return {
+            "etl": etl_members,
+            "bodega": bodega_members
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener destinatarios de LDAP: {str(e)}"
+        )
 
 @app.get("/api/admin/enviar_resumen_semanal")
 async def trigger_enviar_resumen_semanal(background_tasks: BackgroundTasks):

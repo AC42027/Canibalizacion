@@ -396,3 +396,97 @@ mark {
     background: #e2e8f0;
     color: var(--primary-color);
 }
+
+/* Estilos para el panel de Destinatarios de Notificación */
+.destinatarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.destinatario-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+.destinatario-card:hover {
+    border-color: var(--primary-color);
+    background: #f1f5f9;
+}
+
+.destinatario-card.checked {
+    border-color: var(--success);
+    background: #ecfdf5;
+}
+
+.destinatario-card input[type="checkbox"] {
+    width: auto;
+    margin-top: 0.25rem;
+    cursor: pointer;
+    accent-color: var(--success);
+}
+
+.destinatario-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.destinatario-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.destinatario-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.destinatario-role {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+    align-self: flex-start;
+}
+
+.role-planner {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.role-tecnico {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.role-etl {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.role-bodega {
+    background: #fef9c3;
+    color: #854d0e;
+}

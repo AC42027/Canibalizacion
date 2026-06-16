@@ -78,3 +78,47 @@ def get_emails_for_role(role_name: str) -> list:
     except Exception as e:
         print(f"ERROR: No se pudo obtener correos de LDAP para el rol {role_name}: {e}")
         return []
+
+def get_members_for_role(role_name: str) -> list:
+    """
+    Retorna la lista de diccionarios con {'nombre': str, 'correo': str}
+    para los usuarios pertenecientes al rol consultado desde LDAP.
+    """
+    try:
+        conn = get_ldap_connection()
+        search_base = "DC=la,DC=ad,DC=goodyear,DC=com"
+        
+        if role_name == 'planner':
+            search_filter = "(&(objectCategory=person)(objectClass=user)(title=Planner)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT))"
+        elif role_name == 'etl':
+            search_filter = ("(&(objectCategory=person)(objectClass=user)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT)"
+                             "(department=*ENGINEERING*)"
+                             "(|(title=Reliability Manager)(title=Maintenance Engineer)(title=Utilities Coordinator)(title=Facilities Coordinator)))")
+        elif role_name == 'bodega':
+            search_filter = "(&(objectCategory=person)(objectClass=user)(title=Store Room Specialist)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT))"
+        elif role_name == 'gerente':
+            search_filter = "(&(objectCategory=person)(objectClass=user)(title=Engineering Manager Sr)(physicalDeliveryOfficeName=Santiago-CL-SANTIAGO-DE-CHILE-PLT))"
+        else:
+            return []
+            
+        conn.search(search_base, search_filter, search_scope=SUBTREE, attributes=['cn', 'mail'])
+        members = []
+        for entry in conn.entries:
+            if entry.mail and entry.mail.value:
+                mail_val = entry.mail.value[0] if isinstance(entry.mail.value, list) else entry.mail.value
+                cn_val = entry.cn.value if entry.cn else mail_val.split("@")[0]
+                members.append({
+                    "nombre": cn_val,
+                    "correo": mail_val.strip()
+                })
+        conn.unbind()
+        
+        unique_members = {}
+        for m in members:
+            unique_members[m["correo"].lower()] = m
+            
+        return sorted(list(unique_members.values()), key=lambda x: x["nombre"])
+    except Exception as e:
+        print(f"ERROR: No se pudo obtener miembros de LDAP para el rol {role_name}: {e}")
+        return []
+
