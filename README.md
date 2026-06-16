@@ -4,179 +4,83 @@ Este es el repositorio oficial del **Sistema de Control de Canibalizaciones** de
 
 ---
 
-## 🚀 Inicio Rápido (Desarrollo en Windows)
+## 🚀 Inicio Rápido (Lanzador del Sistema)
 
 El proyecto cuenta con un script automatizado para plataformas Windows que simplifica la inicialización del entorno y el servicio web:
 
-1. **Ejecutar el Lanzador**: Haz doble clic en el archivo [INICIAR_SISTEMA.bat](./INICIAR_SISTEMA.bat).
+1. **Ejecutar el Lanzador**: Haz doble clic en el archivo [INICIAR_SISTEMA.bat](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/INICIAR_SISTEMA.bat).
 2. **Qué hace el script automáticamente**:
    - Valida la instalación de Python en el sistema.
    - Crea un entorno virtual de Python (`venv`) si no existe.
-   - Activa el entorno virtual e instala/actualiza silenciosamente las dependencias de [requirements.txt](./requirements.txt).
+   - Activa el entorno virtual e instala/actualiza silenciosamente las dependencias de [requirements.txt](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/requirements.txt).
    - Abre tu navegador predeterminado en `http://localhost:8080/index.html`.
-   - Inicia el servidor web backend mediante Uvicorn ejecutando [app.py](./app.py).
+   - Inicia el servidor web backend mediante Uvicorn ejecutando [app.py](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/app.py).
 
 ---
 
-## 🔐 Gestión de Credenciales y Variables de Entorno
+## 📋 Resumen de Nuevas Funcionalidades y Cambios Recientes
 
-El sistema maneja credenciales sensibles para servicios externos (como servidores LDAP corporativos y servidores de correo SMTP de Office 365) mediante variables de entorno especificadas en el archivo [.env](./.env).
+El sistema ha sido mejorado con características avanzadas de búsqueda, seguridad, auditoría e interfaz interactiva:
 
-### 1. Variables Configuradas en `.env`
+### 1. Búsqueda y Expansión Dinámica del Árbol de Equipos
+* **Archivo**: [dashboard.html](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/dashboard.html)
+* **Funcionalidad**: Al ingresar un término de búsqueda para buscar una máquina o componente, el árbol de equipos completo (cargado de [arbol_equipos.json](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/arbol_equipos.json)) se expande de forma automática y resalta las coincidencias de inmediato.
+* **Impacto**: Optimiza el tiempo del operador al ubicar jerárquicamente cualquier activo sin requerir memoria de su división o área exacta.
 
-| Variable | Tipo | Descripción | Ejemplo |
-| :--- | :--- | :--- | :--- |
-| **LDAP_SERVER** | String | Host o dirección del servidor Active Directory / LDAP | `'ldapsCLSLA.la.ad.goodyear.com'` |
-| **LDAP_PORT** | Integer | Puerto de conexión LDAP (3268 para Global Catalog) | `3268` |
-| **LDAP_USER** | String | Usuario corporativo para enlazar (bind) | `'la\\LDA1425'` |
-| **LDAP_PASS** | String | Contraseña del usuario LDAP | *[Definida en .env]* |
-| **SMTP_SERVER** | String | Servidor de correo de salida (SMTP) | `smtp.office365.com` |
-| **SMTP_PORT** | Integer | Puerto del servicio SMTP (habitualmente 587 para TLS) | `587` |
-| **SMTP_USER** | String | Cuenta de correo emisora de notificaciones | `system_metrics@goodyear.com` |
-| **SMTP_PASS** | String | Contraseña de la cuenta de correo | *[Definida en .env]* |
-| **SMTP_USE_TLS**| Boolean| Indica si se debe emplear encriptación TLS | `True` |
-| **SMTP_USE_SSL**| Boolean| Indica si se debe emplear encriptación SSL directa | `False` |
+### 2. Autenticación y Auditoría Obligatoria
+* **Archivos**: [detail.html](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/detail.html) y [app.py](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/app.py)
+* **Restricción de Acceso**: La edición de la **Fecha estimada de reposición** y el cambio del estado de normalización (de *Pendiente* a *Normalizado* y viceversa) requieren un inicio de sesión con credenciales válidas.
+* **Historial de Cambios (Logs de Auditoría)**: Cada acción de edición se registra en la base de datos dentro de la tabla `historial_cambios`. El detalle muestra un panel de historial detallado que contiene:
+  - Nombre del responsable.
+  - Fecha y hora exacta del cambio.
+  - Campo modificado (`tiempo_reposicion` o `normalizado`).
+  - Valor anterior y valor nuevo.
 
-> [!WARNING]
-> Nunca subas el archivo `.env` con credenciales reales a repositorios públicos o compartidos de Git. Asegúrate de que el archivo `.env` esté incluido en el archivo `.gitignore`.
+### 3. Expiración de Sesión por Inactividad (Auto-Logout)
+Para mitigar riesgos de seguridad por pantallas abiertas sin supervisión en planta:
+* **Cliente (Navegador)**: Cierra la sesión automáticamente después de **10 minutos** de inactividad física (sin movimientos del mouse, clics o teclado).
+* **Servidor (FastAPI)**: Expira el token de sesión a los **15 minutos** de inactividad.
+* **Configuración del Tiempo**:
+  * *Servidor*: Modificar la constante `SESSION_TIMEOUT_SECONDS = 900` en [app.py](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/app.py#L16).
+  * *Cliente*: Modificar el tiempo del timeout en la función de control de inactividad de [detail.html](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/detail.html) (ej. `600000` ms para 10 minutos).
 
-### 2. Cómo se consumen estas credenciales en la Aplicación (Python)
+### 4. Visualización Jerárquica Completa en Dashboard
+* **Archivo**: [history.html](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/history.html)
+* **Mejora**: En la columna **Máquinas (Origen ➔ Destino)** del listado de movimientos, se visualiza el nombre de la máquina y debajo la **División y Área** correspondiente en formato secundario y limpio. Esto proporciona contexto instantáneo de la procedencia y el destino del repuesto.
 
-Para que el backend en [app.py](./app.py) pueda leer y utilizar estas variables, se debe agregar el módulo `python-dotenv` al proyecto.
+### 5. Panel de Filtros Interactivos Combinados
+* **Archivo**: [history.html](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/history.html)
+* **Reorganización**: El panel superior está estructurado en filas con títulos a la izquierda y un borde decorativo amarillo:
+  1. *Filtro de Registro*: Tarjetas interactivas de *Total Canibalizaciones*, *Pendientes de Normalizar* y *Normalizados* (que operan como botones de filtrado instantáneo), y una tarjeta dinámica para visualizar el *Usuario Activo*.
+  2. *Filtro por División*: Botones rápidos para filtrar movimientos de *División A*, *División B*, *Facilities* y *Utilities*.
+* **Multifiltro**: Los filtros de estado, división y la barra de búsqueda por texto operan de manera conjunta y simultánea, mostrando la cantidad de resultados y las condiciones aplicadas en tiempo real.
 
-1. **Instalar Dependencia**:
-   Agrega `python-dotenv` a [requirements.txt](./requirements.txt) o instálalo manualmente:
-   ```bash
-   pip install python-dotenv
-   ```
-
-2. **Carga en el Código (`app.py`)**:
-   Inserta el siguiente código al inicio del archivo principal para cargar automáticamente las variables desde el archivo `.env` en `os.environ`:
-   ```python
-   import os
-   from dotenv import load_dotenv
-
-   # Cargar variables del archivo .env al entorno
-   load_dotenv()
-
-   # Ejemplo de lectura de variables LDAP
-   LDAP_SERVER = os.getenv("LDAP_SERVER")
-   LDAP_PORT = int(os.getenv("LDAP_PORT", 389))
-   LDAP_USER = os.getenv("LDAP_USER")
-   LDAP_PASS = os.getenv("LDAP_PASS")
-
-   # Ejemplo de lectura de variables SMTP
-   SMTP_SERVER = os.getenv("SMTP_SERVER")
-   SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-   SMTP_USER = os.getenv("SMTP_USER")
-   SMTP_PASS = os.getenv("SMTP_PASS")
-   SMTP_USE_TLS = os.getenv("SMTP_USE_TLS") == "True"
-   ```
-
----
-
-## 🐧 Despliegue en Producción (RedHat Enterprise Linux)
-
-Mientras que el desarrollo se realiza en entornos Windows, el servidor de producción definitivo correrá bajo **RedHat Enterprise Linux (RHEL)**. A continuación, se detalla la guía de configuración y despliegue para ese entorno.
-
-### 1. Requisitos Previos en RedHat
-Instala los paquetes necesarios del sistema usando el gestor de paquetes de RedHat (`dnf` o `yum`):
-```bash
-sudo dnf update -y
-sudo dnf install -y python3 python3-pip python3-virtualenv sqlite nginx
-```
-
-### 2. Estructura y Permisos del Proyecto
-Se recomienda ubicar la aplicación en `/opt/canibalizacion`. Es vital restringir los permisos para que los usuarios sin privilegios no puedan leer el archivo de configuración `.env`:
-
-```bash
-# Crear directorio de la aplicación
-sudo mkdir -p /opt/canibalizacion
-sudo chown -R $USER:$USER /opt/canibalizacion
-
-# Clonar o transferir los archivos al directorio
-# (Mover archivos aquí)
-
-# Crear entorno virtual e instalar requerimientos
-cd /opt/canibalizacion
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 3. Asegurar las Credenciales en RedHat
-Para proteger las contraseñas LDAP y SMTP del archivo `.env`, se deben ajustar los permisos del sistema de archivos linux:
-```bash
-# Cambiar propietario y permisos del .env
-chmod 600 /opt/canibalizacion/.env
-```
-*Esto asegura que solo el usuario propietario de la ejecución de la app pueda leer el archivo con las credenciales.*
-
-### 4. Configuración como Servicio del Sistema (Systemd)
-Para garantizar que el servicio FastAPI se inicie automáticamente con el sistema, se recupere ante fallas y corra en segundo plano de manera segura, crearemos un servicio `systemd`:
-
-1. Crea el archivo de servicio `/etc/systemd/system/canibalizacion.service`:
-   ```ini
-   [Unit]
-   Description=Servicio de Control de Canibalizaciones (FastAPI)
-   After=network.target
-
-   [Service]
-   User=goodyear_app
-   Group=goodyear_app
-   WorkingDirectory=/opt/canibalizacion
-   EnvironmentFile=/opt/canibalizacion/.env
-   ExecStart=/opt/canibalizacion/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8080
-   Restart=always
-   RestartSec=5
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-   *(Nota: Asegúrate de crear el usuario de sistema `goodyear_app` o usar el usuario configurado en tu servidor de RedHat).*
-
-2. Habilitar y arrancar el servicio:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable canibalizacion.service
-   sudo systemctl start canibalizacion.service
-   sudo systemctl status canibalizacion.service
-   ```
-
-### 5. Configuración del Firewall de RedHat
-Por defecto, el firewall de RedHat bloqueará el tráfico entrante al puerto 8080. Ejecuta lo siguiente para permitirlo:
-```bash
-sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
-sudo firewall-cmd --reload
-```
-
-### 6. Configuración de Proxy Inverso Nginx (Opcional - Recomendado)
-Para servir la aplicación sobre el puerto estándar HTTP (80) o HTTPS (443), configura Nginx como proxy inverso hacia Uvicorn:
-
-1. Modifica `/etc/nginx/nginx.conf` o añade un archivo de configuración en `/etc/nginx/conf.d/canibalizacion.conf`:
-   ```nginx
-   server {
-       listen 80;
-       server_name canibalizaciones.goodyear.com; # o IP del servidor
-
-       location / {
-           proxy_pass http://127.0.0.1:8080;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-           proxy_set_header X-Forwarded-Proto $scheme;
-       }
-   }
-   ```
-2. Reinicia Nginx y habilítalo:
-   ```bash
-   sudo systemctl restart nginx
-   sudo systemctl enable nginx
-   ```
+### 6. Notificaciones de Correo y Reporte Ejecutivo Semanal
+El sistema integra notificaciones automatizadas en tiempo real y reportes ejecutivos semanales distribuidos de forma dinámica a través de SMTP:
+* **Notificación Instantánea**: Al registrar una canibalización, se envía un correo HTML institucional detallado a:
+  - **Planner**: Correo del planner responsable del registro (`correo_responsable`).
+  - **Ing. Mantenimiento**: Correo del técnico que retiró la pieza (`correo_tecnico`).
+  - **ETL**: Extraído de LDAP (*Reliability Manager*, *Maintenance Engineer*, *Utilities Coordinator*, *Facilities Coordinator*).
+  - **Planificador de bodega**: Extraído de LDAP (*Store Room Specialist*), solo si existe código de bodega.
+* **Resumen Semanal de Partes Sustraídas**:
+  - **Del Área**: Enviado al Planner y al Ingeniero de Mantenimiento de cada área específica con el movimiento semanal.
+  - **De División (Consolidado)**: Enviado al rol de ETL en LDAP.
+  - **De Planta (Con Código)**: Enviado al rol de Planificador de Bodega en LDAP.
+* **Resumen Semanal de SIN REPOSICIÓN**:
+  - Enviado al **Gerente de Ingeniería** (*Engineering Manager Sr*) con el consolidado y el cálculo automático de los días de atraso de las canibalizaciones pendientes.
+* **Ejecución y Automatización**:
+  - El script semanal se puede ejecutar de forma programada mediante un cron job del sistema:
+    ```bash
+    .venv/bin/python3 enviar_resumen_semanal.py
+    ```
+  - También puede ser gatillado de manera remota a través del endpoint administrativo en segundo plano:
+    ```http
+    GET /api/admin/enviar_resumen_semanal
+    ```
 
 ---
 
-## 🔑 Credenciales de Acceso (Entorno de Prueba Local)
+## 🔑 Credenciales de Acceso (Entorno de Prueba)
 
 El sistema provee tres roles distintos con credenciales de prueba pre-pobladas en la base de datos SQLite:
 
@@ -188,7 +92,9 @@ El sistema provee tres roles distintos con credenciales de prueba pre-pobladas e
 
 ---
 
-## 🛠️ Estructura del Código y Base de Datos
+## 🛠️ Arquitectura y Estructura del Código
+
+El proyecto sigue una arquitectura ligera y autocontenida:
 
 ```bash
 Canibalizacion/
@@ -204,9 +110,8 @@ Canibalizacion/
 ├── dashboard.html             # Vista Árbol: Navegador de la estructura jerárquica de activos
 ├── styles.css                 # Hojas de estilo unificadas (Goodyear Theme: Dark & Yellow accents)
 │
-├── arbol_equipos.json         # Base de datos jerárquica de la planta
+├── arbol_equipos.json         # Base de datos jerárquica de la planta (Divisiones/Áreas/Líneas/Máquinas)
 ├── canibalizacion.db          # Base de datos relacional SQLite activa
-├── .env                       # Credenciales de integración LDAP y SMTP (local)
 │
 ├── readmes/                   # Documentación adicional del proyecto
 │   ├── AVANCES_Y_REGISTROS.md # Registro extendido de avances e instrucciones técnicas
@@ -222,9 +127,9 @@ El motor de datos emplea **SQLite** con la siguiente distribución relacional:
 * **`historial_cambios`**: Registra los cambios de estado y fechas asociando el responsable de la acción.
 
 ### Integraciones Externas (APIs de Planta)
-El archivo [app.py](./app.py) integra llamadas a los servidores internos de la planta:
-* **LDAP (Búsqueda de Personal)**: Consulta de manera dinámica los perfiles de los técnicos, jefes de departamento, puestos y correos.
-* **SAP Stock (Spare Parts)**: Búsqueda y consulta de la disponibilidad física de repuestos (nuevo/reparado), ubicaciones en bodega y valorizaciones monetarias.
+El archivo [app.py](file:///c:/Users/ac42028/Documents/canibalizacion/Canibalizacion/app.py) integra llamadas a los servidores internos de la planta:
+* **LDAP (Búsqueda de Personal)**: Consulta de manera dinámica los perfiles de los técnicos, jefes de departamento, puestos y correos en `http://10.107.194.70/conn/temp/ldap.php`.
+* **SAP Stock (Spare Parts)**: Búsqueda y consulta de la disponibilidad física de repuestos (nuevo/reparado), ubicaciones en bodega y valorizaciones monetarias a través del servicio en `http://10.107.194.72/ingenieria/spare_parts/asset/php/get_spare.php`.
 
 ---
 *Goodyear L504 - Área de Confiabilidad e Ingeniería de Mantenimiento*

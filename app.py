@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, HTTPException, status
+from fastapi import FastAPI, Body, HTTPException, status, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -12,11 +12,192 @@ import hashlib
 import uuid
 from datetime import datetime
 import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from ldap_utils import load_env, get_emails_for_role
+
+# Cargar variables de entorno al iniciar
+load_env()
 
 SESSION_TIMEOUT_SECONDS = 900  # 15 minutos
 ACTIVE_SESSIONS = {}  # token -> {"usuario": str, "rol": str, "nombre": str, "last_activity": float}
 
 app = FastAPI(title="Canibalización API")
+
+def enviar_correo(subject: str, html_body: str, to_emails: list):
+    smtp_server = os.environ.get("SMTP_SERVER", "smtp.office365.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "system_metrics@goodyear.com")
+    smtp_pass = os.environ.get("SMTP_PASS", "medicioncontrolanalisis015")
+    smtp_use_tls = os.environ.get("SMTP_USE_TLS", "True").lower() in ("true", "1", "yes")
+    smtp_use_ssl = os.environ.get("SMTP_USE_SSL", "False").lower() in ("true", "1", "yes")
+
+    to_emails = [email.strip() for email in to_emails if email and "@" in email]
+    if not to_emails:
+        print("WARNING: No hay destinatarios válidos para el correo.")
+        return False
+        
+    print(f"Enviando correo '{subject}' a {to_emails}...")
+    
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = ", ".join(to_emails)
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
+    
+    try:
+        if smtp_use_ssl:
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
+        else:
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+            
+        if smtp_use_tls:
+            server.starttls()
+            
+        if smtp_pass:
+            server.login(smtp_user, smtp_pass)
+            
+        server.sendmail(smtp_user, to_emails, msg.as_string())
+        server.quit()
+        print("¡Correo enviado con éxito!")
+        return True
+    except Exception as e:
+        print(f"ERROR: No se pudo enviar el correo por SMTP: {e}")
+        return False
+
+def enviar_correo_aviso(registro: dict):
+    destinatarios = []
+    
+    # a. Planner
+    if registro.get("correo_responsable"):
+        destinatarios.append(registro["correo_responsable"])
+        
+    # b. Ing Mtto
+    if registro.get("correo_tecnico"):
+        destinatarios.append(registro["correo_tecnico"])
+        
+    # c. ETL
+    etl_emails = get_emails_for_role('etl')
+    destinatarios.extend(etl_emails)
+    
+    # d. Planificador de bodega (solo si existe código de bodega)
+    codigo_bodega = registro.get("codigo_bodega") or ""
+    if codigo_bodega.strip():
+        bodega_emails = get_emails_for_role('bodega')
+        destinatarios.extend(bodega_emails)
+        
+    destinatarios = list(set([d.strip() for d in destinatarios if d and "@" in d]))
+    if not destinatarios:
+        print("WARNING: No se encontraron destinatarios de correo válidos para el aviso.")
+        return
+        
+    subject = f"[AVISO] Nueva Canibalización Registrada - Planta L504"
+    
+    html_body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 0; }}
+            .container {{ max-width: 650px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border-top: 6px solid #FFDE00; }}
+            .header {{ background-color: #111827; color: #ffffff; padding: 20px; text-align: center; }}
+            .header h2 {{ margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }}
+            .content {{ padding: 25px; }}
+            .section-title {{ font-size: 16px; font-weight: 600; color: #111827; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }}
+            .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+            .info-table td {{ padding: 10px 8px; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }}
+            .info-table td.label {{ font-weight: 600; color: #4b5563; width: 35%; }}
+            .info-table td.value {{ color: #111827; }}
+            .footer {{ background-color: #f9fafb; text-align: center; padding: 15px; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }}
+            .badge {{ display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background-color: #fef3c7; color: #d97706; }}
+            .badge-bodega {{ background-color: #dbeafe; color: #1e40af; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>Control de Canibalizaciones — Planta L504</h2>
+            </div>
+            <div class="content">
+                <p style="font-size: 15px; margin-top: 0; color: #374151;">Se ha registrado una nueva canibalización en el sistema. A continuación se detallan los datos del aviso:</p>
+                
+                <div class="section-title">Detalles del Repuesto</div>
+                <table class="info-table">
+                    <tr>
+                        <td class="label">Repuesto:</td>
+                        <td class="value"><strong>{registro.get('repuesto_nombre', 'N/A')}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Código SAP:</td>
+                        <td class="value">{registro.get('repuesto_codigo') or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Código Bodega:</td>
+                        <td class="value">
+                            {f'<span class="badge badge-bodega">{codigo_bodega}</span>' if codigo_bodega else '<em>No registrado</em>'}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cantidad:</td>
+                        <td class="value">{registro.get('cantidad', 1)} unidades</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Descripción:</td>
+                        <td class="value">{registro.get('repuesto_descripcion', 'N/A')}</td>
+                    </tr>
+                </table>
+                
+                <div class="section-title">Ubicaciones y OT</div>
+                <table class="info-table">
+                    <tr>
+                        <td class="label">Máquina Donante:</td>
+                        <td class="value" style="color: #b91c1c;">{registro.get('maquina_donante', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Máquina Receptora:</td>
+                        <td class="value" style="color: #15803d;">{registro.get('maquina_receptora', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Orden de Trabajo:</td>
+                        <td class="value"><span class="badge">{registro.get('orden_trabajo', 'N/A')}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Razón / Motivo:</td>
+                        <td class="value">{registro.get('razon', 'N/A')}</td>
+                    </tr>
+                </table>
+                
+                <div class="section-title">Responsabilidades y Trazabilidad</div>
+                <table class="info-table">
+                    <tr>
+                        <td class="label">Retirado por (Ing/Tec):</td>
+                        <td class="value">{registro.get('retirado_por', 'N/A')} ({registro.get('correo_tecnico', 'N/A')})</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Planner Responsable:</td>
+                        <td class="value">{registro.get('responsable_reposicion', 'N/A')} ({registro.get('correo_responsable', 'N/A')})</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Fecha Compromiso:</td>
+                        <td class="value" style="font-weight: bold; color: #b91c1c;">{registro.get('tiempo_reposicion', 'N/A')}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Plan de Acción:</td>
+                        <td class="value">{registro.get('plan_accion', 'N/A')}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer">
+                <strong>Gestión de Repuestos</strong><br>
+                Planta Goodyear – Chile
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    enviar_correo(subject, html_body, destinatarios)
+
 
 # Modelo de datos para validación
 class LoginRequest(BaseModel):
@@ -157,7 +338,7 @@ async def obtener_registro_detalle(registro_id: str):
         return {"error": f"Error al leer datos: {str(e)}"}
 
 @app.post("/guardar")
-async def guardar(registro: Registro):
+async def guardar(registro: Registro, background_tasks: BackgroundTasks):
     import time
     nuevo_registro = registro.dict()
     
@@ -194,6 +375,10 @@ async def guardar(registro: Registro):
         
         conn.commit()
         conn.close()
+        
+        # Disparar envío de correo en segundo plano
+        background_tasks.add_task(enviar_correo_aviso, nuevo_registro)
+        
         return {"mensaje": "Registro guardado correctamente", "id": nuevo_registro["id"]}
     except Exception as e:
         print(f"Error al guardar registro: {e}")
@@ -527,6 +712,22 @@ async def obtener_historial(registro_id: str):
 
 # Servir archivos estáticos (index.html, styles.css)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
+@app.get("/api/admin/enviar_resumen_semanal")
+async def trigger_enviar_resumen_semanal(background_tasks: BackgroundTasks):
+    try:
+        import subprocess
+        def run_script():
+            env_py = os.path.join(os.path.dirname(__file__), ".venv", "bin", "python3")
+            script_path = os.path.join(os.path.dirname(__file__), "enviar_resumen_semanal.py")
+            if not os.path.exists(env_py):
+                env_py = "python3"
+            subprocess.run([env_py, script_path], check=True)
+            
+        background_tasks.add_task(run_script)
+        return {"success": True, "mensaje": "Ejecución del reporte semanal iniciada en segundo plano."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
