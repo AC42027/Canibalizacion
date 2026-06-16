@@ -1,0 +1,14 @@
+# Entornos virtuales
+venv/
+.venv/
+
+# Variables de entorno y credenciales (muy importante)
+.env
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Logs
+app.log
+*.log
