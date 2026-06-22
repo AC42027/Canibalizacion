@@ -15,7 +15,7 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from ldap_utils import load_env, get_emails_for_role
+from ldap_utils import load_env, get_emails_for_role, authenticate_user_ldap
 
 # Cargar variables de entorno al iniciar
 load_env()
@@ -223,6 +223,31 @@ class EditDateRequest(BaseModel):
 class NormalizarRequest(BaseModel):
     token: str
 
+class ETLMappingRequest(BaseModel):
+    usuario: str
+    nombre: str
+    correo: str
+    division_id: str
+    division_nombre: str
+    token: str
+
+class EADMappingRequest(BaseModel):
+    usuario: str
+    nombre: str
+    correo: str
+    area_id: str
+    area_nombre: str
+    area_path: str
+    token: str
+
+class PlannerMappingRequest(BaseModel):
+    usuario: str
+    nombre: str
+    correo: str
+    division_id: str
+    division_nombre: str
+    token: str
+
 class Registro(BaseModel):
     id: Optional[str] = None
     fecha: str
@@ -283,6 +308,41 @@ async def startup_db():
         campo_modificado TEXT,
         valor_anterior TEXT,
         valor_nuevo TEXT
+    )
+    """)
+    
+    # Crear tabla de mapeo ETL a División
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS etl_division_mapping (
+        usuario TEXT PRIMARY KEY,
+        nombre TEXT,
+        correo TEXT,
+        division_id TEXT,
+        division_nombre TEXT
+    )
+    """)
+    
+    # Crear tabla de mapeo EAD a Áreas del árbol (recreada para soportar usuario/nombre/correo)
+    cursor.execute("DROP TABLE IF EXISTS ead_area_mapping")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS ead_area_mapping (
+        usuario TEXT PRIMARY KEY,
+        nombre TEXT,
+        correo TEXT,
+        area_id TEXT,
+        area_nombre TEXT,
+        area_path TEXT
+    )
+    """)
+    
+    # Crear tabla de mapeo de Planificadores
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS planner_mapping (
+        usuario TEXT PRIMARY KEY,
+        nombre TEXT,
+        correo TEXT,
+        division_id TEXT,
+        division_nombre TEXT
     )
     """)
     
@@ -629,6 +689,38 @@ async def buscar_personal(q: str, division: Optional[str] = None):
 
 @app.post("/api/login")
 async def login(req: LoginRequest):
+    # 1. Intentar autenticación mediante LDAP
+    ldap_res = authenticate_user_ldap(req.usuario, req.contrasena)
+    if ldap_res.get("success"):
+        token = str(uuid.uuid4())
+        rol = ldap_res["rol"]
+        nombre = ldap_res["nombre"]
+        
+        # Verificar si hay una asignación local de rol para este usuario de red
+        conn = get_db_connection()
+        local_user = conn.execute("SELECT rol, nombre FROM usuarios WHERE usuario = ?", (ldap_res["usuario"],)).fetchone()
+        conn.close()
+        
+        if local_user:
+            rol = local_user["rol"]
+            if local_user["nombre"]:
+                nombre = local_user["nombre"]
+                
+        ACTIVE_SESSIONS[token] = {
+            "usuario": ldap_res["usuario"],
+            "rol": rol,
+            "nombre": nombre,
+            "last_activity": time.time()
+        }
+        return {
+            "success": True,
+            "token": token,
+            "usuario": ldap_res["usuario"],
+            "rol": rol,
+            "nombre": nombre
+        }
+        
+    # 2. Fallback a la base de datos local
     pwd_hash = hashlib.sha256(req.contrasena.encode()).hexdigest()
     conn = get_db_connection()
     user = conn.execute("SELECT * FROM usuarios WHERE usuario = ? AND contrasena_hash = ?", 
@@ -636,9 +728,11 @@ async def login(req: LoginRequest):
     conn.close()
     
     if user is None:
+        # Si falló tanto LDAP como el fallback local
+        error_detail = ldap_res.get("error") or "Usuario o contraseña incorrectos"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario o contraseña incorrectos"
+            detail=f"Error de autenticación: {error_detail}"
         )
         
     token = str(uuid.uuid4())
@@ -738,7 +832,6 @@ async def obtener_historial(registro_id: str):
     return {"historial": lista_cambios}
 
 # Servir archivos estáticos (index.html, styles.css)
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 @app.get("/api/destinatarios_disponibles")
 async def obtener_destinatarios_disponibles():
@@ -771,6 +864,200 @@ async def trigger_enviar_resumen_semanal(background_tasks: BackgroundTasks):
         return {"success": True, "mensaje": "Ejecución del reporte semanal iniciada en segundo plano."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def verify_admin_session(token: str):
+    if token not in ACTIVE_SESSIONS:
+        raise HTTPException(status_code=401, detail="Sesión inválida o expirada.")
+    session = ACTIVE_SESSIONS[token]
+    if time.time() - session.get("last_activity", 0) > SESSION_TIMEOUT_SECONDS:
+        del ACTIVE_SESSIONS[token]
+        raise HTTPException(status_code=401, detail="La sesión ha expirado por inactividad.")
+    session["last_activity"] = time.time()
+    if session.get("rol") != "admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de Administrador.")
+    return session
+
+@app.get("/api/admin/tree_elements")
+async def get_tree_elements():
+    try:
+        filename = "arbol_equipos.json" if os.path.exists("arbol_equipos.json") else "arbol_equipos_test.json"
+        with open(filename, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        divisions = []
+        departments = []
+        
+        for div in data.get("divisiones", []):
+            div_name = div.get("nombre", "")
+            div_id = div.get("id", "")
+            divisions.append({
+                "id": div_id,
+                "nombre": div_name
+            })
+            
+            # Solo tomar los hijos directos de la división (Nivel 2 / Departamentos)
+            for dept in div.get("hijos", []):
+                dept_name = dept.get("nombre", "")
+                dept_id = dept.get("id", "")
+                if dept_id:
+                    departments.append({
+                        "id": dept_id,
+                        "nombre": dept_name,
+                        "path": f"{div_name} > {dept_name}"
+                    })
+            
+        return {
+            "divisions": divisions,
+            "departments": sorted(departments, key=lambda x: x["path"])
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al leer el árbol de equipos: {str(e)}")
+
+@app.get("/api/admin/config")
+async def get_admin_config(token: str):
+    verify_admin_session(token)
+    conn = get_db_connection()
+    etls = conn.execute("SELECT * FROM etl_division_mapping").fetchall()
+    eads = conn.execute("SELECT * FROM ead_area_mapping").fetchall()
+    planners = conn.execute("SELECT * FROM planner_mapping").fetchall()
+    conn.close()
+    
+    return {
+        "etls": [dict(r) for r in etls],
+        "eads": [dict(r) for r in eads],
+        "planners": [dict(r) for r in planners]
+    }
+
+@app.post("/api/admin/config/etl")
+async def save_etl_mapping(req: ETLMappingRequest):
+    verify_admin_session(req.token)
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO etl_division_mapping (usuario, nombre, correo, division_id, division_nombre)
+            VALUES (?, ?, ?, ?, ?)
+        """, (req.usuario, req.nombre, req.correo, req.division_id, req.division_nombre))
+        conn.commit()
+        return {"success": True, "mensaje": "Asignación de ETL guardada correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/admin/config/ead")
+async def save_ead_mapping(req: EADMappingRequest):
+    verify_admin_session(req.token)
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO ead_area_mapping (usuario, nombre, correo, area_id, area_nombre, area_path)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (req.usuario, req.nombre, req.correo, req.area_id, req.area_nombre, req.area_path))
+        conn.commit()
+        return {"success": True, "mensaje": "Asociación de área EAD guardada correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.delete("/api/admin/config/ead/{usuario}")
+async def delete_ead_mapping(usuario: str, token: str):
+    verify_admin_session(token)
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM ead_area_mapping WHERE usuario = ?", (usuario,))
+        conn.commit()
+        return {"success": True, "mensaje": "Área EAD eliminada correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/admin/config/planner")
+async def save_planner_mapping(req: PlannerMappingRequest):
+    verify_admin_session(req.token)
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO planner_mapping (usuario, nombre, correo, division_id, division_nombre)
+            VALUES (?, ?, ?, ?, ?)
+        """, (req.usuario, req.nombre, req.correo, req.division_id, req.division_nombre))
+        conn.commit()
+        return {"success": True, "mensaje": "Planificador registrado correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.delete("/api/admin/config/planner/{usuario}")
+async def delete_planner_mapping(usuario: str, token: str):
+    verify_admin_session(token)
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM planner_mapping WHERE usuario = ?", (usuario,))
+        conn.commit()
+        return {"success": True, "mensaje": "Planificador eliminado correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+class LocalUserRequest(BaseModel):
+    usuario: str
+    nombre: str
+    rol: str
+    contrasena: Optional[str] = None
+    token: str
+
+@app.get("/api/admin/users")
+async def get_local_users(token: str):
+    verify_admin_session(token)
+    conn = get_db_connection()
+    users = conn.execute("SELECT usuario, nombre, rol FROM usuarios").fetchall()
+    conn.close()
+    return {"users": [dict(u) for u in users]}
+
+@app.post("/api/admin/users")
+async def save_local_user(req: LocalUserRequest):
+    verify_admin_session(req.token)
+    conn = get_db_connection()
+    try:
+        exist = conn.execute("SELECT contrasena_hash FROM usuarios WHERE usuario = ?", (req.usuario,)).fetchone()
+        if req.contrasena:
+            pwd_hash = hashlib.sha256(req.contrasena.encode()).hexdigest()
+        elif exist:
+            pwd_hash = exist["contrasena_hash"]
+        else:
+            pwd_hash = hashlib.sha256("goodyear123".encode()).hexdigest()
+            
+        conn.execute("""
+            INSERT OR REPLACE INTO usuarios (usuario, contrasena_hash, nombre, rol)
+            VALUES (?, ?, ?, ?)
+        """, (req.usuario, pwd_hash, req.nombre, req.rol))
+        conn.commit()
+        return {"success": True, "mensaje": "Usuario guardado con éxito."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.delete("/api/admin/users/{usuario}")
+async def delete_local_user(usuario: str, token: str):
+    verify_admin_session(token)
+    if usuario == "admin":
+        raise HTTPException(status_code=400, detail="No se puede eliminar el usuario administrador principal.")
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM usuarios WHERE usuario = ?", (usuario,))
+        conn.commit()
+        return {"success": True, "mensaje": "Usuario eliminado correctamente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# Servir archivos estáticos (index.html, styles.css)
+app.mount("/", StaticFiles(directory=".", html=True), name="static")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)

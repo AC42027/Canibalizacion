@@ -12,3 +12,10 @@ __pycache__/
 # Logs
 app.log
 *.log
+
+# Base de datos local
+canibalizacion.db
+
+# Temporales y borradores
+scratch/
+

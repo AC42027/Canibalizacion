@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración | Goodyear Planta L504</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #002855;
+            --primary-dark: #001a38;
+            --accent-yellow: #FFDD00;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #166534;
+            --danger: #991b1b;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        .navbar {
+            background: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--accent-yellow); text-decoration: none; }
+        .btn-back { color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; }
+
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+
+        .header-section { margin-bottom: 2rem; border-bottom: 2px solid var(--accent-yellow); padding-bottom: 1rem; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: 2rem; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+
+        /* Estilos de las pestañas */
+        .tabs { display: flex; gap: 0.5rem; border-bottom: 2px solid var(--border); margin-bottom: 2rem; }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent-yellow); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .card { background: var(--card); border-radius: 1rem; border: 1px solid var(--border); padding: 1.75rem; box-shadow: var(--shadow-md); }
+        .card h3 { font-family: 'Outfit', sans-serif; font-size: 1.25rem; color: var(--primary); margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+
+        .form-group { margin-bottom: 1.25rem; position: relative; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--primary); text-transform: uppercase; }
+        
+        .form-control, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .form-control:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 40, 85, 0.1);
+        }
+
+        .btn-submit {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary);
+            color: var(--accent-yellow);
+            border: 2px solid var(--accent-yellow);
+            border-radius: 0.5rem;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .btn-submit:hover { background-color: var(--primary-dark); color: white; }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-danger-outline:hover { background: #fee2e2; }
+
+        /* Estilos de tablas */
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        .admin-table th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background-color: #f1f5f9;
+            color: var(--primary);
+            font-weight: 700;
+            border-bottom: 2px solid var(--border);
+        }
+        .admin-table td { padding: 1rem; border-bottom: 1px solid var(--border); }
+        .admin-table tr:hover { background-color: #f8fafc; }
+
+        /* Autocomplete results dropdown */
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-top: none;
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .autocomplete-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.2s;
+        }
+        .autocomplete-item:hover { background-color: #f1f5f9; }
+        .autocomplete-item .name { font-weight: 600; font-size: 0.85rem; display: block; }
+        .autocomplete-item .title { font-size: 0.75rem; color: var(--text-muted); display: block; }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-info { background: #e0f2fe; color: #0369a1; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+
+        #errorContainer { display: none; text-align: center; padding: 5rem 2rem; }
+        #errorContainer h2 { color: #ef4444; margin-bottom: 1rem; font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="history.html" class="btn-back">← Volver al Historial</a>
+        <a href="#" class="navbar-brand">GOODYEAR | PANEL DE ADMINISTRACIÓN</a>
+        <div style="font-size: 0.8rem; opacity: 0.8;">Planta L504 - Control de Activos</div>
+    </nav>
+
+    <!-- Pantalla de Error de Permiso -->
+    <div id="errorContainer" class="container card">
+        <h2>Acceso Restringido</h2>
+        <p>No tienes privilegios suficientes para acceder al panel de administración.</p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+            Por favor, inicia sesión con una cuenta de <strong>Administrador</strong>.
+        </p>
+        <a href="history.html" class="btn-submit" style="display: inline-block; margin-top: 1.5rem; text-decoration: none;">Volver al Historial</a>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="container" id="mainContainer">
+        
+        <div class="header-section">
+            <h1>Administración de Canibalización</h1>
+            <p class="subtitle">Gestiona las asignaciones de ETLs, áreas EAD y planificadores autorizados.</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-etls')">Mapas ETL / Divisiones</button>
+            <button class="tab-btn" onclick="switchTab('tab-eads')">Mapeo EAD / Árbol Equipos</button>
+            <button class="tab-btn" onclick="switchTab('tab-planners')">Gestionar Planificadores</button>
+            <button class="tab-btn" onclick="switchTab('tab-users')">Roles y Usuarios locales</button>
+        </div>
+
+        <!-- PESTAÑA: ETLs -->
+        <div id="tab-etls" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h3>Asignar ETL a División</h3>
+                    <form id="formEtlMapping" onsubmit="saveEtl(event)">
+                        <div class="form-group">
+                            <label>Buscar Coordinador/Ingeniero ETL</label>
+                            <input type="text" id="inputSearchEtl" class="form-control" placeholder="Escriba nombre o correo del ETL..." autocomplete="off">
+                            <div id="resultsSearchEtl" class="autocomplete-results"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>ETL Seleccionado</label>
+                            <input type="text" id="etlNombre" class="form-control" readonly style="background:#f1f5f9; font-weight:700;" placeholder="Seleccione un usuario de la lista superior...">
+                            <input type="hidden" id="etlUsuario">
+                            <input type="hidden" id="etlCorreo">
+                        </div>
+                        <div class="form-group">
+                            <label>División Asociada</label>
+                            <select id="etlDivision" required>
+                                <option value="">-- Seleccione una División --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit">Guardar Asignación</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Coordinadores ETL Activos</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ETL (Nombre)</th>
+                                    <th>División Asignada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableEtlBody">
+                                <tr><td colspan="2" style="text-align:center; color:var(--text-muted);">Cargando configuraciones...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: EADs -->
+        <div id="tab-eads" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h3>Asociar Personal EAD a Departamento</h3>
+                    <form id="formEadMapping" onsubmit="saveEad(event)">
+                        <div class="form-group">
+                            <label>Buscar Personal EAD (LDAP)</label>
+                            <input type="text" id="inputSearchEad" class="form-control" placeholder="Escriba nombre o correo del personal EAD..." autocomplete="off">
+                            <div id="resultsSearchEad" class="autocomplete-results"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Personal EAD Seleccionado</label>
+                            <input type="text" id="eadNombre" class="form-control" readonly style="background:#f1f5f9; font-weight:700;" placeholder="Seleccione un usuario de la lista superior...">
+                            <input type="hidden" id="eadUsuario">
+                            <input type="hidden" id="eadCorreo">
+                        </div>
+                        <div class="form-group">
+                            <label>Departamento/Área (Árbol de Equipos)</label>
+                            <select id="eadArea" required>
+                                <option value="">-- Seleccione un Departamento/Área --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit">Asociar Área EAD</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Mapeo de Áreas EAD</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Área EAD</th>
+                                    <th>Ruta Árbol Equipos</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableEadBody">
+                                <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Cargando mapeos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: Planners -->
+        <div id="tab-planners" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h3>Registrar Planificador</h3>
+                    <form id="formPlannerMapping" onsubmit="savePlanner(event)">
+                        <div class="form-group">
+                            <label>Buscar Planificador (LDAP)</label>
+                            <input type="text" id="inputSearchPlanner" class="form-control" placeholder="Escriba nombre o correo del planificador..." autocomplete="off">
+                            <div id="resultsSearchPlanner" class="autocomplete-results"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Planificador Seleccionado</label>
+                            <input type="text" id="plannerNombre" class="form-control" readonly style="background:#f1f5f9; font-weight:700;" placeholder="Seleccione un usuario de la lista superior...">
+                            <input type="hidden" id="plannerUsuario">
+                            <input type="hidden" id="plannerCorreo">
+                        </div>
+                        <div class="form-group">
+                            <label>División Responsable</label>
+                            <select id="plannerDivision" required>
+                                <option value="">-- Seleccione una División --</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit">Guardar Planificador</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Planificadores Autorizados</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Planificador</th>
+                                    <th>División</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablePlannerBody">
+                                <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Cargando planificadores...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: Usuarios y Roles -->
+        <div id="tab-users" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h3>Registrar / Modificar Usuario o Rol</h3>
+                    <form id="formUserMapping" onsubmit="saveLocalUser(event)">
+                        <div class="form-group">
+                            <label>Buscar Usuario en LDAP (Opcional)</label>
+                            <input type="text" id="inputSearchUser" class="form-control" placeholder="Escriba nombre o correo para autocompletar..." autocomplete="off">
+                            <div id="resultsSearchUser" class="autocomplete-results"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Usuario (Network ID / sAMAccountName)</label>
+                            <input type="text" id="userUsuario" class="form-control" placeholder="Ej: ac42027 o LDA1425" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="userNombre" class="form-control" placeholder="Ej: Juan Perez" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Rol Asignado</label>
+                            <select id="userRol" required>
+                                <option value="">-- Seleccione un Rol --</option>
+                                <option value="admin">Administrador (Admin)</option>
+                                <option value="planificador">Planificador (Planner)</option>
+                                <option value="ingeniero_confiabilidad">Ingeniero de Confiabilidad (ETL)</option>
+                                <option value="bodega">Personal de Bodega (Store Room)</option>
+                                <option value="usuario">Usuario Consulta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña Local (Opcional - solo para desarrollo offline)</label>
+                            <input type="password" id="userContrasena" class="form-control" placeholder="Ingrese contraseña solo si no usa LDAP">
+                        </div>
+                        <button type="submit" class="btn-submit">Guardar Usuario / Rol</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Usuarios y Roles Registrados</h3>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Nombre</th>
+                                    <th>Rol</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableUserBody">
+                                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Cargando usuarios...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Guard de seguridad admin
+        const token = sessionStorage.getItem('session_token');
+        const rol = sessionStorage.getItem('session_rol');
+
+        if (!token || rol !== 'admin') {
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'block';
+        }
+
+        // Cambio de pestañas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            
+            // Activar botón correspondiente
+            const tabBtnMap = {
+                'tab-etls': 0,
+                'tab-eads': 1,
+                'tab-planners': 2,
+                'tab-users': 3
+            };
+            const btnIndex = tabBtnMap[tabId] || 0;
+            document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+        }
+
+        // Datos del Árbol de Equipos
+        let divisionsList = [];
+        let departmentsList = [];
+
+        async function loadTreeData() {
+            try {
+                const response = await fetch('/api/admin/tree_elements');
+                const data = await response.json();
+                divisionsList = data.divisions || [];
+                departmentsList = data.departments || [];
+
+                // Llenar selectores de divisiones
+                const selectEtlDiv = document.getElementById('etlDivision');
+                const selectPlannerDiv = document.getElementById('plannerDivision');
+                const divOptionsHtml = '<option value="">-- Seleccione una División --</option>' + 
+                    divisionsList.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+                
+                selectEtlDiv.innerHTML = divOptionsHtml;
+                selectPlannerDiv.innerHTML = divOptionsHtml;
+
+                // Llenar selector de áreas EAD
+                const selectEadArea = document.getElementById('eadArea');
+                selectEadArea.innerHTML = '<option value="">-- Seleccione un Departamento/Área --</option>' + 
+                    departmentsList.map(d => `<option value="${d.id}">${d.path}</option>`).join('');
+            } catch (err) {
+                console.error("Error al cargar datos del árbol de equipos:", err);
+            }
+        }
+
+        // Cargar listas de la base de datos
+        async function loadConfigData() {
+            if (!token) return;
+            try {
+                const response = await fetch(`/api/admin/config?token=${encodeURIComponent(token)}`);
+                const data = await response.json();
+
+                // Renderizar ETLs
+                const tableEtlBody = document.getElementById('tableEtlBody');
+                if (data.etls.length === 0) {
+                    tableEtlBody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">No hay ETLs asignados.</td></tr>';
+                } else {
+                    tableEtlBody.innerHTML = data.etls.map(e => `
+                        <tr>
+                            <td><strong>${e.nombre}</strong><br><small style="color:var(--text-muted);">${e.correo}</small></td>
+                            <td><span class="badge badge-info">${e.division_nombre}</span></td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Renderizar EADs
+                const tableEadBody = document.getElementById('tableEadBody');
+                if (data.eads.length === 0) {
+                    tableEadBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No hay áreas EAD mapeadas.</td></tr>';
+                } else {
+                    tableEadBody.innerHTML = data.eads.map(ead => `
+                        <tr>
+                            <td><strong>${ead.nombre || ead.ead_nombre}</strong><br><small style="color:var(--text-muted);">${ead.correo || ''}</small></td>
+                            <td style="font-size:0.8rem; color:var(--text-muted);">${ead.area_path}</td>
+                            <td>
+                                <button type="button" class="btn-danger-outline" onclick="deleteEad('${ead.usuario || ead.ead_nombre}')">Eliminar</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Renderizar Planificadores
+                const tablePlannerBody = document.getElementById('tablePlannerBody');
+                if (data.planners.length === 0) {
+                    tablePlannerBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No hay planificadores registrados.</td></tr>';
+                } else {
+                    tablePlannerBody.innerHTML = data.planners.map(p => `
+                        <tr>
+                            <td><strong>${p.nombre}</strong><br><small style="color:var(--text-muted);">${p.correo}</small></td>
+                            <td><span class="badge badge-purple">${p.division_nombre}</span></td>
+                            <td>
+                                <button type="button" class="btn-danger-outline" onclick="deletePlanner('${p.usuario}')">Eliminar</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Renderizar Usuarios y Roles locales
+                const tableUserBody = document.getElementById('tableUserBody');
+                const usersResponse = await fetch(`/api/admin/users?token=${encodeURIComponent(token)}`);
+                const usersData = await usersResponse.json();
+                if (!usersData.users || usersData.users.length === 0) {
+                    tableUserBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No hay usuarios registrados.</td></tr>';
+                } else {
+                    tableUserBody.innerHTML = usersData.users.map(u => `
+                        <tr>
+                            <td><strong>${u.usuario}</strong></td>
+                            <td>${u.nombre || 'N/A'}</td>
+                            <td><span class="badge ${u.rol === 'admin' ? 'badge-success' : u.rol === 'planificador' ? 'badge-purple' : 'badge-info'}">${u.rol}</span></td>
+                            <td>
+                                ${u.usuario === 'admin' ? '<em>Protegido</em>' : `<button type="button" class="btn-danger-outline" onclick="deleteLocalUser('${u.usuario}')">Eliminar</button>`}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error("Error al cargar configuraciones:", err);
+            }
+        }
+
+        // Búsqueda inteligente LDAP para ETLs y Planners
+        function setupAdminSearch(inputId, resultsId, onSelect) {
+            const input = document.getElementById(inputId);
+            const results = document.getElementById(resultsId);
+            let debounceTimeout;
+
+            if (!input || !results) return;
+
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimeout);
+                const q = input.value.trim();
+                if (q.length < 3) {
+                    results.style.display = 'none';
+                    return;
+                }
+
+                debounceTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/personal?q=${encodeURIComponent(q)}`);
+                        const data = await res.json();
+                        if (data.length === 0) {
+                            results.innerHTML = '<div style="padding:0.75rem; text-align:center; font-size:0.8rem; color:var(--text-muted);">No se encontraron usuarios</div>';
+                        } else {
+                            results.innerHTML = data.map(item => `
+                                <div class="autocomplete-item" onclick='selectUser(${JSON.stringify(item).replace(/'/g, "&apos;")}, "${inputId}", "${resultsId}")'>
+                                    <span class="name">${item.displayName}</span>
+                                    <span class="title">${item.title} (${item.email})</span>
+                                </div>
+                            `).join('');
+                        }
+                        results.style.display = 'block';
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }, 300);
+            });
+        }
+
+        window.selectUser = function(user, inputId, resultsId) {
+            document.getElementById(resultsId).style.display = 'none';
+            document.getElementById(inputId).value = "";
+            
+            if (inputId === 'inputSearchEtl') {
+                document.getElementById('etlNombre').value = user.displayName;
+                document.getElementById('etlUsuario').value = user.user;
+                document.getElementById('etlCorreo').value = user.email || "";
+            } else if (inputId === 'inputSearchPlanner') {
+                document.getElementById('plannerNombre').value = user.displayName;
+                document.getElementById('plannerUsuario').value = user.user;
+                document.getElementById('plannerCorreo').value = user.email || "";
+            } else if (inputId === 'inputSearchUser') {
+                document.getElementById('userNombre').value = user.displayName;
+                document.getElementById('userUsuario').value = user.user;
+            } else if (inputId === 'inputSearchEad') {
+                document.getElementById('eadNombre').value = user.displayName;
+                document.getElementById('eadUsuario').value = user.user;
+                document.getElementById('eadCorreo').value = user.email || "";
+            }
+        }
+
+        // Ocultar resultados si se hace click fuera
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.form-group')) {
+                document.querySelectorAll('.autocomplete-results').forEach(r => r.style.display = 'none');
+            }
+        });
+
+        // Guardar ETL
+        async function saveEtl(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('etlUsuario').value;
+            const nombre = document.getElementById('etlNombre').value;
+            const correo = document.getElementById('etlCorreo').value;
+            const selectDiv = document.getElementById('etlDivision');
+            const division_id = selectDiv.value;
+            const division_nombre = selectDiv.options[selectDiv.selectedIndex].text;
+
+            if (!usuario || !division_id) {
+                alert("Por favor seleccione un usuario de la lista y una división.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/config/etl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, nombre, correo, division_id, division_nombre, token })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    alert(res.mensaje);
+                    document.getElementById('formEtlMapping').reset();
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al guardar");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+            }
+        }
+
+        // Guardar EAD
+        async function saveEad(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('eadUsuario').value;
+            const nombre = document.getElementById('eadNombre').value;
+            const correo = document.getElementById('eadCorreo').value;
+            const selectArea = document.getElementById('eadArea');
+            const area_id = selectArea.value;
+            const area_nombre = selectArea.options[selectArea.selectedIndex].text.split(' > ').pop();
+            const area_path = selectArea.options[selectArea.selectedIndex].text;
+
+            if (!usuario || !area_id) {
+                alert("Por favor seleccione un personal EAD de la lista y un departamento/área.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/config/ead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, nombre, correo, area_id, area_nombre, area_path, token })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    alert(res.mensaje);
+                    document.getElementById('formEadMapping').reset();
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al guardar");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+            }
+        }
+
+        // Eliminar EAD
+        async function deleteEad(usuario) {
+            if (!confirm(`¿Está seguro de que desea eliminar el mapeo para este personal EAD?`)) return;
+            try {
+                const response = await fetch(`/api/admin/config/ead/${encodeURIComponent(usuario)}?token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al eliminar");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Guardar Planner
+        async function savePlanner(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('plannerUsuario').value;
+            const nombre = document.getElementById('plannerNombre').value;
+            const correo = document.getElementById('plannerCorreo').value;
+            const selectDiv = document.getElementById('plannerDivision');
+            const division_id = selectDiv.value;
+            const division_nombre = selectDiv.options[selectDiv.selectedIndex].text;
+
+            if (!usuario || !division_id) {
+                alert("Por favor seleccione un planificador y una división.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/config/planner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, nombre, correo, division_id, division_nombre, token })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    alert(res.mensaje);
+                    document.getElementById('formPlannerMapping').reset();
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al guardar");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+            }
+        }
+
+        // Eliminar Planner
+        async function deletePlanner(usuario) {
+            if (!confirm(`¿Está seguro de que desea eliminar al planificador?`)) return;
+            try {
+                const response = await fetch(`/api/admin/config/planner/${encodeURIComponent(usuario)}?token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al eliminar");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Guardar Usuario Local
+        async function saveLocalUser(event) {
+            event.preventDefault();
+            const usuario = document.getElementById('userUsuario').value.trim();
+            const nombre = document.getElementById('userNombre').value.trim();
+            const rol = document.getElementById('userRol').value;
+            const contrasena = document.getElementById('userContrasena').value;
+
+            if (!usuario || !nombre || !rol) {
+                alert("Por favor ingrese usuario, nombre y rol.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, nombre, rol, contrasena: contrasena || null, token })
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    alert(res.mensaje);
+                    document.getElementById('formUserMapping').reset();
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al guardar");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+            }
+        }
+
+        // Eliminar Usuario Local
+        async function deleteLocalUser(usuario) {
+            if (!confirm(`¿Está seguro de que desea eliminar el rol local de ${usuario}?`)) return;
+            try {
+                const response = await fetch(`/api/admin/users/${encodeURIComponent(usuario)}?token=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+                const res = await response.json();
+                if (response.ok && res.success) {
+                    loadConfigData();
+                } else {
+                    alert(res.detail || "Error al eliminar");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Inicialización al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (token && rol === 'admin') {
+                loadTreeData();
+                loadConfigData();
+                setupAdminSearch('inputSearchEtl', 'resultsSearchEtl');
+                setupAdminSearch('inputSearchPlanner', 'resultsSearchPlanner');
+                setupAdminSearch('inputSearchUser', 'resultsSearchUser');
+                setupAdminSearch('inputSearchEad', 'resultsSearchEad');
+            }
+        });
+    </script>
+</body>
+</html>
