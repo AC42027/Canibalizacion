@@ -13,17 +13,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Update Dependencies
+      - name: Set up Python Virtual Environment
+        run: |
+          if [ ! -d .venv ]; then
+            python3 -m venv .venv
+          fi
+          .venv/bin/pip install --upgrade pip
+
+      - name: Update Dependencies (Runner Workspace)
         run: |
           if [ -f requirements.txt ]; then
             .venv/bin/pip install -r requirements.txt
           fi
 
-      - name: Run Tests
+      - name: Run Tests (Runner Workspace)
         run: |
           .venv/bin/python test_app.py
 
-      - name: Restart FastAPI Service
+      - name: Deploy to /var/www/html/canib_eq
         run: |
+          cd /var/www/html/canib_eq
+          git pull origin main
+          .venv/bin/pip install -r requirements.txt
           sudo systemctl restart canib-eq.service
-
