@@ -80,6 +80,31 @@ El sistema integra notificaciones automatizadas en tiempo real y reportes ejecut
 
 ---
 
+## 🔧 Últimos Ajustes y Correcciones (Julio 2026)
+
+Se realizaron correcciones críticas en la usabilidad y consistencia del flujo de trabajo:
+
+### 1. Validación de Fechas en el Registro
+* **Reglas de negocio**:
+  * **Fecha del evento**: No puede ser posterior al día actual (no se permiten registros en el futuro).
+  * **Fecha estimada de reposición**: No puede ser anterior a la fecha del evento (no se permiten fechas de entrega pasadas).
+* **Solución**: Validación en frontend mediante restricciones HTML (`max`/`min` dinámicos) y validaciones en backend en [app.py](file:///c:/Users/ac42028/Desktop/Goodyear/Canibalizacion/app.py) que rechazan solicitudes incorrectas con un código de estado HTTP 400.
+
+### 2. Corrección del Autocompletado de Personal ("Retirado por")
+* **Problema**: Al escribir un nombre en el buscador de técnicos/planners y hacer clic en la segunda o tercera opción, el evento `change` del input (disparado al perder el foco) gatillaba una búsqueda de coincidencia automática en LDAP que sobreescribía la entrada y forzaba la selección de la primera persona de la lista por defecto.
+* **Solución**: Se implementó una lógica de selección segura en [index.html](file:///c:/Users/ac42028/Desktop/Goodyear/Canibalizacion/index.html):
+  1. Se utiliza el evento `onmousedown` (que se ejecuta antes de la pérdida de foco del input) para registrar la selección seleccionada.
+  2. Se guarda el valor en el atributo `input.dataset.lastSelected`.
+  3. El listener del evento `change` valida si el texto del campo coincide con `lastSelected`, y de ser así, detiene la ejecución de la búsqueda automática, previniendo la sobreescritura accidental.
+
+### 3. Exclusión Completa del Personal de Bodega sin Código
+* **Problema**: Cuando un repuesto no cuenta con un código de bodega asignado (o está marcado como `"SIN UBICACIÓN"`), no corresponde notificar al personal de bodega, ya que el flujo del repuesto debe ser gestionado netamente por los planificadores.
+* **Solución**: 
+  * **Frontend**: Se modificó [index.html](file:///c:/Users/ac42028/Desktop/Goodyear/Canibalizacion/index.html) para que si no hay un código válido (`tieneBodega === false`), no se muestren las tarjetas del personal de bodega (incluyendo a Marcel García) en la interfaz de destinatarios.
+  * **Backend**: Se adaptó la función `enviar_correo_aviso` en [app.py](file:///c:/Users/ac42028/Desktop/Goodyear/Canibalizacion/app.py) para que no añada a ningún destinatario del rol bodega cuando el repuesto carece de ubicación codificada.
+
+---
+
 ## 🔑 Credenciales de Acceso (Entorno de Prueba)
 
 El sistema provee tres roles distintos con credenciales de prueba pre-pobladas en la base de datos SQLite:

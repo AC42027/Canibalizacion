@@ -1039,7 +1039,9 @@
                                 }
 
                                 return `
-                                    <div class="autocomplete-item" onclick='seleccionarPersona("${inputId}", "${resultsId}", ${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+                                    <div class="autocomplete-item" 
+                                         onmousedown='seleccionarPersona("${inputId}", "${resultsId}", ${JSON.stringify(p).replace(/'/g, "&apos;")})'
+                                         onclick='seleccionarPersona("${inputId}", "${resultsId}", ${JSON.stringify(p).replace(/'/g, "&apos;")})'>
                                         <span class="name">${p.displayName}</span>
                                         <span class="title">${displayTitle}</span>
                                     </div>
@@ -1084,6 +1086,9 @@
 
             input.addEventListener('change', async () => {
                 const val = input.value.trim();
+                if (input.dataset.lastSelected === val) {
+                    return;
+                }
                 if (val.length >= 3) {
                     try {
                         const res = await fetch(`/api/personal?q=${encodeURIComponent(val)}`);
@@ -1104,8 +1109,12 @@
         }
 
         window.seleccionarPersona = async function (inputId, resultsId, person) {
-            document.getElementById(inputId).value = person.displayName;
-            document.getElementById(resultsId).style.display = 'none';
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = person.displayName;
+            input.dataset.lastSelected = person.displayName;
+            const resContainer = document.getElementById(resultsId);
+            if (resContainer) resContainer.style.display = 'none';
 
             // Lógica para el Técnico (Retirado por)
             if (inputId === 'retirado_por') {
@@ -1323,7 +1332,7 @@
 
             // 4. Bodega
             ldapBodega.forEach(m => {
-                if (m.correo) {
+                if (m.correo && tieneBodega) {
                     if (userCheckedStates[m.correo] === undefined) {
                         userCheckedStates[m.correo] = tieneBodega;
                     }
@@ -1958,7 +1967,20 @@
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            document.getElementById('fecha_registro').value = `${year}-${month}-${day}`;
+            const hoy = `${year}-${month}-${day}`;
+            document.getElementById('fecha_registro').value = hoy;
+
+            // Evitar la selección de fechas futuras en el campo "Fecha del Evento"
+            const inputFechaEvento = document.querySelector('input[name="fecha"]');
+            if (inputFechaEvento) {
+                inputFechaEvento.max = hoy;
+            }
+
+            // Evitar la selección de fechas pasadas en el campo "Fecha estimada de reposición"
+            const inputTiempoReposicion = document.querySelector('input[name="tiempo_reposicion"]');
+            if (inputTiempoReposicion) {
+                inputTiempoReposicion.min = hoy;
+            }
 
             // 2. Cargar equipos (proceso pesado)
             cargarEquipos().catch(err => console.error("Error equipos:", err));
@@ -2014,6 +2036,18 @@
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
+            // Validar que la fecha del evento no sea posterior a la de registro (Hoy)
+            if (data.fecha && data.fecha_registro && data.fecha > data.fecha_registro) {
+                alert('La fecha del evento no puede ser posterior a la fecha de registro (Hoy).');
+                return;
+            }
+
+            // Validar que la fecha estimada de reposición no sea anterior a la de registro (Hoy)
+            if (data.tiempo_reposicion && data.fecha_registro && data.tiempo_reposicion < data.fecha_registro) {
+                alert('La fecha estimada de reposición no puede ser anterior a la fecha de registro (Hoy).');
+                return;
+            }
+
             if (data.cantidad) {
                 data.cantidad = parseInt(data.cantidad);
             }
@@ -2048,7 +2082,9 @@
                     body: JSON.stringify(data)
                 });
 
-                if (response.ok) {
+                const resData = await response.json();
+
+                if (response.ok && !resData.error) {
                     alert('Registro guardado con éxito.');
                     e.target.reset();
                     document.getElementById('stockStatusContainer').style.display = 'none';
@@ -2068,7 +2104,8 @@
                     inicializarDestinatarios();
 
                 } else {
-                    alert('Error al guardar el registro.');
+                    const msg = resData.error || resData.detail || 'Error al guardar el registro.';
+                    alert(msg);
                 }
             } catch (error) {
                 console.error("Error:", error);

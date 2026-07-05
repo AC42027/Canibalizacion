@@ -443,7 +443,15 @@
                 abrirModal('modalLogin');
             } else {
                 const dateInput = document.getElementById('nuevaFechaInput');
-                if (dateInput) dateInput.value = fechaActual;
+                if (dateInput) {
+                    dateInput.value = fechaActual;
+                    // Establecer fecha mínima para no permitir fechas pasadas
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    dateInput.min = `${year}-${month}-${day}`;
+                }
                 abrirModal('modalEditarFecha');
             }
         }
@@ -508,6 +516,18 @@
 
             if (!id || !nuevaFecha || !token) {
                 alert('Faltan datos requeridos.');
+                return;
+            }
+
+            // Validar que la nueva fecha no sea anterior a hoy
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hoy = `${year}-${month}-${day}`;
+            if (nuevaFecha < hoy) {
+                errorDiv.innerText = 'La fecha estimada de reposición no puede ser anterior al día de hoy.';
+                errorDiv.style.display = 'block';
                 return;
             }
 

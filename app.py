@@ -89,8 +89,9 @@ def enviar_correo_aviso(registro: dict):
         destinatarios.extend(etl_emails)
         
         # d. Planificador de bodega (solo si existe código de bodega)
-        codigo_bodega = registro.get("codigo_bodega") or ""
-        if codigo_bodega.strip():
+        codigo_bodega_str = (registro.get("codigo_bodega") or "").strip().upper()
+        tiene_bodega = codigo_bodega_str != "" and "SIN UBICACIÓN" not in codigo_bodega_str
+        if tiene_bodega:
             bodega_emails = get_emails_for_role('bodega')
             destinatarios.extend(bodega_emails)
         
@@ -424,6 +425,23 @@ async def obtener_registro_detalle(registro_id: str):
 async def guardar(registro: Registro, background_tasks: BackgroundTasks):
     import time
     nuevo_registro = registro.dict()
+    
+    # Validar que la fecha del evento no sea posterior al día de hoy (fecha_registro)
+    fecha_evento = nuevo_registro.get("fecha")
+    fecha_registro = nuevo_registro.get("fecha_registro")
+    if fecha_evento and fecha_registro and fecha_evento > fecha_registro:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La fecha del evento no puede ser posterior a la fecha de hoy."
+        )
+    
+    # Validar que la fecha estimada de reposición no sea anterior al día de hoy (fecha_registro)
+    tiempo_reposicion = nuevo_registro.get("tiempo_reposicion")
+    if tiempo_reposicion and fecha_registro and tiempo_reposicion < fecha_registro:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La fecha estimada de reposición no puede ser anterior a la fecha de hoy."
+        )
     
     # Asignar ID si no tiene (para nuevos registros)
     if not nuevo_registro.get("id"):
@@ -795,6 +813,16 @@ async def editar_fecha(req: EditDateRequest):
         
     valor_anterior = registro["tiempo_reposicion"]
     
+    # Validar que la nueva fecha no sea anterior al día de hoy
+    from datetime import date
+    hoy_str = date.today().strftime("%Y-%m-%d")
+    if req.nueva_fecha < hoy_str:
+        conn.close()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva fecha estimada de reposición no puede ser anterior al día de hoy."
+        )
+
     # 4. Actualizar fecha
     conn.execute("UPDATE registros SET tiempo_reposicion = ? WHERE id = ?", (req.nueva_fecha, req.registro_id))
     
