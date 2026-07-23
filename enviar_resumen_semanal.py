@@ -33,10 +33,10 @@ def get_db_connection():
     return conn
 
 def enviar_correo(subject: str, html_body: str, to_emails: list):
-    smtp_server = os.environ.get("SMTP_SERVER", "smtp.office365.com")
+    smtp_server = os.environ.get("SMTP_SERVER", "")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER", "system_metrics@goodyear.com")
-    smtp_pass = os.environ.get("SMTP_PASS", "medicioncontrolanalisis015")
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
     smtp_use_tls = os.environ.get("SMTP_USE_TLS", "True").lower() in ("true", "1", "yes")
     smtp_use_ssl = os.environ.get("SMTP_USE_SSL", "False").lower() in ("true", "1", "yes")
 

@@ -19,10 +19,10 @@ def load_env():
 def get_ldap_connection():
     """Establece y retorna una conexión bind a LDAP usando la configuración de .env"""
     load_env()
-    server_address = os.environ.get("LDAP_SERVER", "10.107.194.214")
+    server_address = os.environ.get("LDAP_SERVER", "")
     port = int(os.environ.get("LDAP_PORT", "3268"))
-    user = os.environ.get("LDAP_USER", "la\\LDA1425")
-    password = os.environ.get("LDAP_PASS", "teBa9GFkCJvZrVPtHQDYLGyL")
+    user = os.environ.get("LDAP_USER", "")
+    password = os.environ.get("LDAP_PASS", "")
     
     # Resolver problema de barras invertidas duplicadas en la cadena cargada
     if "\\\\" in user:
@@ -132,10 +132,10 @@ def authenticate_user_ldap(username: str, password_user: str) -> dict:
     """
     try:
         load_env()
-        server_address = os.environ.get("LDAP_SERVER", "ldapsCLSLA.la.ad.goodyear.com")
+        server_address = os.environ.get("LDAP_SERVER", "")
         port = int(os.environ.get("LDAP_PORT", "3268"))
-        service_user = os.environ.get("LDAP_USER", "la\\LDA1425")
-        service_pass = os.environ.get("LDAP_PASS", "teBa9GFkCJvZrVPtHQDYLGyL")
+        service_user = os.environ.get("LDAP_USER", "")
+        service_pass = os.environ.get("LDAP_PASS", "")
         
         # Limpiar el nombre de usuario
         if "\\" in username:
