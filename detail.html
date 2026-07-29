@@ -443,15 +443,7 @@
                 abrirModal('modalLogin');
             } else {
                 const dateInput = document.getElementById('nuevaFechaInput');
-                if (dateInput) {
-                    dateInput.value = fechaActual;
-                    // Establecer fecha mínima para no permitir fechas pasadas
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
-                    dateInput.min = `${year}-${month}-${day}`;
-                }
+                if (dateInput) dateInput.value = fechaActual;
                 abrirModal('modalEditarFecha');
             }
         }
@@ -516,18 +508,6 @@
 
             if (!id || !nuevaFecha || !token) {
                 alert('Faltan datos requeridos.');
-                return;
-            }
-
-            // Validar que la nueva fecha no sea anterior a hoy
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hoy = `${year}-${month}-${day}`;
-            if (nuevaFecha < hoy) {
-                errorDiv.innerText = 'La fecha estimada de reposición no puede ser anterior al día de hoy.';
-                errorDiv.style.display = 'block';
                 return;
             }
 
@@ -685,6 +665,19 @@
                             
                             <div class="label">Personal de Bodega</div>
                             <div class="value">📦 ${r.personal_bodega || 'No especificado'}</div>
+
+                            <div style="height: 1.5rem;"></div>
+                            <div style="border-top: 1px dashed var(--border); padding-top: 1rem;">
+                                <div class="label" style="font-weight: 700; color: var(--primary);">🏢 Encargados de Área (Estructura Interna)</div>
+                                <div id="encargadosAreaDetail" style="margin-top: 0.5rem; font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                    <span style="color: var(--text-muted);">Cargando encargados de área...</span>
+                                </div>
+                                <div style="margin-top: 1rem;">
+                                    <a id="btnMailtoDetail" href="#" target="_blank" class="btn-primary" style="display: inline-block; padding: 0.6rem 1rem; font-size: 0.85rem; text-decoration: none; text-align: center; width: 100%; border-radius: 0.5rem;">
+                                        ✉️ Redactar Correo Notificación
+                                    </a>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="card full-width">
@@ -736,9 +729,72 @@
 
                 // Cargar el historial de cambios de fecha
                 cargarHistorialCambios(id);
+
+                // Cargar encargados de área y generar mailto
+                cargarEncargadosAreaDetail(r);
             } catch (error) {
                 console.error(error);
                 document.getElementById('content').innerHTML = "<h1>Error al cargar los datos del servidor.</h1>";
+            }
+        }
+
+        async function cargarEncargadosAreaDetail(r) {
+            try {
+                const response = await fetch(`/api/encargados-area?path_donante=${encodeURIComponent(r.maquina_donante || '')}&path_receptora=${encodeURIComponent(r.maquina_receptora || '')}`);
+                const data = await response.json();
+                const container = document.getElementById('encargadosAreaDetail');
+                const btnMail = document.getElementById('btnMailtoDetail');
+                
+                if (!container) return;
+
+                const combinados = data.combinados || [];
+                if (combinados.length === 0) {
+                    container.innerHTML = '<span style="color: var(--text-muted);">No se encontraron encargados específicos para estas áreas.</span>';
+                } else {
+                    container.innerHTML = combinados.map(c => `
+                        <div style="background: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 0.375rem; border: 1px solid #e2e8f0;">
+                            <strong style="color: #0369a1;">[${c.cargo}]</strong> ${c.nombre} <br>
+                            <small style="color: #64748b;">📧 ${c.correo || 'Sin correo'}</small>
+                        </div>
+                    `).join('');
+                }
+
+                if (btnMail) {
+                    let toList = data.correos_notificacion || [];
+                    if (r.correo_tecnico && !toList.includes(r.correo_tecnico)) toList.push(r.correo_tecnico);
+                    if (r.correo_responsable && !toList.includes(r.correo_responsable)) toList.push(r.correo_responsable);
+
+                    const tieneBodegaValida = r.codigo_bodega && r.codigo_bodega !== 'SIN UBICACIÓN DESIGNADA';
+                    if (tieneBodegaValida && r.correo_bodega && !toList.includes(r.correo_bodega)) {
+                        toList.push(r.correo_bodega);
+                    }
+                    const pbText = tieneBodegaValida ? (r.personal_bodega || 'No especificado') : 'No aplica (Sin ubicación en bodega - Gestión de Planner / Ing. Mtto)';
+
+                    const subject = encodeURIComponent(`[CANIBALIZACIÓN] Notificación de Cambio de Repuesto - OT: ${r.orden_trabajo || 'S/N'}`);
+                    const bodyText = `Estimados,
+
+Se comparte la información correspondiente al registro oficial de canibalización de repuesto (PMAN-7503):
+
+• Registro ID: #${r.id}
+• Orden de Trabajo (OT): ${r.orden_trabajo || 'N/A'}
+• Máquina Donante: ${r.maquina_donante || 'N/A'}
+• Máquina Receptora: ${r.maquina_receptora || 'N/A'}
+• Repuesto: ${r.repuesto_nombre || 'N/A'} (Código: ${r.repuesto_codigo || 'SIN CÓDIGO'})
+• Cantidad: ${r.cantidad} UN
+• Retirado por: ${r.retirado_por}
+• Responsable por Reponer: ${r.responsable_reposicion}
+• Personal de Bodega: ${pbText}
+• Fecha Estimada Reposición: ${r.tiempo_reposicion}
+• Razón: ${r.razon}
+• Plan de Acción: ${r.plan_accion}
+
+--------------------------------------------------
+Mensaje generado automáticamente por el Sistema de Registro de Canibalización L504.`;
+
+                    btnMail.href = `mailto:${toList.join(',')}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+                }
+            } catch (err) {
+                console.error("Error al cargar encargados en detalle:", err);
             }
         }
 

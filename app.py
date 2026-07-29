@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, HTTPException, status, BackgroundTasks
+from fastapi import FastAPI, Body, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -12,204 +12,15 @@ import hashlib
 import uuid
 from datetime import datetime
 import time
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from ldap_utils import load_env, get_emails_for_role, authenticate_user_ldap
 
-# Cargar variables de entorno al iniciar
-load_env()
+import xlrd
+import unicodedata
+import re
 
 SESSION_TIMEOUT_SECONDS = 900  # 15 minutos
 ACTIVE_SESSIONS = {}  # token -> {"usuario": str, "rol": str, "nombre": str, "last_activity": float}
 
 app = FastAPI(title="Canibalización API")
-
-def enviar_correo(subject: str, html_body: str, to_emails: list):
-    smtp_server = os.environ.get("SMTP_SERVER", "")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USER", "")
-    smtp_pass = os.environ.get("SMTP_PASS", "")
-    smtp_use_tls = os.environ.get("SMTP_USE_TLS", "True").lower() in ("true", "1", "yes")
-    smtp_use_ssl = os.environ.get("SMTP_USE_SSL", "False").lower() in ("true", "1", "yes")
-
-    to_emails = [email.strip() for email in to_emails if email and "@" in email]
-    if not to_emails:
-        print("WARNING: No hay destinatarios válidos para el correo.")
-        return False
-        
-    print(f"Enviando correo '{subject}' a {to_emails}...")
-    
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = smtp_user
-    msg["To"] = ", ".join(to_emails)
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
-    
-    try:
-        if smtp_use_ssl:
-            server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
-        else:
-            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
-            
-        if smtp_use_tls:
-            server.starttls()
-            
-        if smtp_pass:
-            server.login(smtp_user, smtp_pass)
-            
-        server.sendmail(smtp_user, to_emails, msg.as_string())
-        server.quit()
-        print("¡Correo enviado con éxito!")
-        return True
-    except Exception as e:
-        print(f"ERROR: No se pudo enviar el correo por SMTP: {e}")
-        return False
-
-def enviar_correo_aviso(registro: dict):
-    # Si la petición incluye una lista explícita de destinatarios seleccionados, la usamos directamente
-    if registro.get("destinatarios_notificacion") and isinstance(registro["destinatarios_notificacion"], list):
-        destinatarios = registro["destinatarios_notificacion"]
-    else:
-        # Fallback de resolución automática si no viene la lista
-        destinatarios = []
-        
-        # a. Planner
-        if registro.get("correo_responsable"):
-            destinatarios.append(registro["correo_responsable"])
-            
-        # b. Ing Mtto
-        if registro.get("correo_ing_mantenimiento"):
-            destinatarios.append(registro["correo_ing_mantenimiento"])
-        elif registro.get("correo_tecnico"):
-            destinatarios.append(registro["correo_tecnico"])
-            
-        # c. ETL
-        etl_emails = get_emails_for_role('etl')
-        destinatarios.extend(etl_emails)
-        
-        # d. Planificador de bodega (solo si existe código de bodega)
-        codigo_bodega_str = (registro.get("codigo_bodega") or "").strip().upper()
-        tiene_bodega = codigo_bodega_str != "" and "SIN UBICACIÓN" not in codigo_bodega_str
-        if tiene_bodega:
-            bodega_emails = get_emails_for_role('bodega')
-            destinatarios.extend(bodega_emails)
-        
-    destinatarios = list(set([d.strip() for d in destinatarios if d and "@" in d]))
-    if not destinatarios:
-        print("WARNING: No se encontraron destinatarios de correo válidos para el aviso.")
-        return
-        
-    subject = f"[AVISO] Nueva Canibalización Registrada - Planta L504"
-    
-    html_body = f"""
-    <html>
-    <head>
-        <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; padding: 0; }}
-            .container {{ max-width: 650px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border-top: 6px solid #FFDE00; }}
-            .header {{ background-color: #111827; color: #ffffff; padding: 20px; text-align: center; }}
-            .header h2 {{ margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }}
-            .content {{ padding: 25px; }}
-            .section-title {{ font-size: 16px; font-weight: 600; color: #111827; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }}
-            .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
-            .info-table td {{ padding: 10px 8px; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }}
-            .info-table td.label {{ font-weight: 600; color: #4b5563; width: 35%; }}
-            .info-table td.value {{ color: #111827; }}
-            .footer {{ background-color: #f9fafb; text-align: center; padding: 15px; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }}
-            .badge {{ display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background-color: #fef3c7; color: #d97706; }}
-            .badge-bodega {{ background-color: #dbeafe; color: #1e40af; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h2>Control de Canibalizaciones — Planta L504</h2>
-            </div>
-            <div class="content">
-                <p style="font-size: 15px; margin-top: 0; color: #374151;">Se ha registrado una nueva canibalización en el sistema. A continuación se detallan los datos del aviso:</p>
-                
-                <div class="section-title">Detalles del Repuesto</div>
-                <table class="info-table">
-                    <tr>
-                        <td class="label">Repuesto:</td>
-                        <td class="value"><strong>{registro.get('repuesto_nombre', 'N/A')}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="label">Código SAP:</td>
-                        <td class="value">{registro.get('repuesto_codigo') or 'N/A'}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Código Bodega:</td>
-                        <td class="value">
-                            {f'<span class="badge badge-bodega">{codigo_bodega}</span>' if codigo_bodega else '<em>No registrado</em>'}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Cantidad:</td>
-                        <td class="value">{registro.get('cantidad', 1)} unidades</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Descripción:</td>
-                        <td class="value">{registro.get('repuesto_descripcion', 'N/A')}</td>
-                    </tr>
-                </table>
-                
-                <div class="section-title">Ubicaciones y OT</div>
-                <table class="info-table">
-                    <tr>
-                        <td class="label">Máquina Donante:</td>
-                        <td class="value" style="color: #b91c1c;">{registro.get('maquina_donante', 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Máquina Receptora:</td>
-                        <td class="value" style="color: #15803d;">{registro.get('maquina_receptora', 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Orden de Trabajo:</td>
-                        <td class="value"><span class="badge">{registro.get('orden_trabajo', 'N/A')}</span></td>
-                    </tr>
-                    <tr>
-                        <td class="label">Razón / Motivo:</td>
-                        <td class="value">{registro.get('razon', 'N/A')}</td>
-                    </tr>
-                </table>
-                
-                <div class="section-title">Responsabilidades y Trazabilidad</div>
-                <table class="info-table">
-                    <tr>
-                        <td class="label">Retirado por (Ing/Tec):</td>
-                        <td class="value">{registro.get('retirado_por', 'N/A')} ({registro.get('correo_tecnico', 'N/A')})</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Planner Responsable:</td>
-                        <td class="value">{registro.get('responsable_reposicion', 'N/A')} ({registro.get('correo_responsable', 'N/A')})</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Ing. Mantenimiento:</td>
-                        <td class="value">{registro.get('ing_mantenimiento', 'N/A')} ({registro.get('correo_ing_mantenimiento', 'N/A')})</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Fecha Compromiso:</td>
-                        <td class="value" style="font-weight: bold; color: #b91c1c;">{registro.get('tiempo_reposicion', 'N/A')}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Plan de Acción:</td>
-                        <td class="value">{registro.get('plan_accion', 'N/A')}</td>
-                    </tr>
-                </table>
-            </div>
-            <div class="footer">
-                <strong>Gestión de Repuestos</strong><br>
-                Planta Goodyear – Chile
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    enviar_correo(subject, html_body, destinatarios)
-
 
 # Modelo de datos para validación
 class LoginRequest(BaseModel):
@@ -222,31 +33,6 @@ class EditDateRequest(BaseModel):
     token: str
 
 class NormalizarRequest(BaseModel):
-    token: str
-
-class ETLMappingRequest(BaseModel):
-    usuario: str
-    nombre: str
-    correo: str
-    division_id: str
-    division_nombre: str
-    token: str
-
-class EADMappingRequest(BaseModel):
-    usuario: str
-    nombre: str
-    correo: str
-    area_id: str
-    area_nombre: str
-    area_path: str
-    token: str
-
-class PlannerMappingRequest(BaseModel):
-    usuario: str
-    nombre: str
-    correo: str
-    division_id: str
-    division_nombre: str
     token: str
 
 class Registro(BaseModel):
@@ -274,10 +60,6 @@ class Registro(BaseModel):
     codigo_bodega: Optional[str] = None
     usuario_registro: Optional[str] = None
     normalizado: bool = False
-    destinatarios_notificacion: Optional[list] = None
-    ing_mantenimiento: Optional[str] = None
-    cargo_ing_mantenimiento: Optional[str] = None
-    correo_ing_mantenimiento: Optional[str] = None
 
 DB_FILE = "canibalizacion.db"
 
@@ -312,41 +94,6 @@ async def startup_db():
     )
     """)
     
-    # Crear tabla de mapeo ETL a División
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS etl_division_mapping (
-        usuario TEXT PRIMARY KEY,
-        nombre TEXT,
-        correo TEXT,
-        division_id TEXT,
-        division_nombre TEXT
-    )
-    """)
-    
-    # Crear tabla de mapeo EAD a Áreas del árbol (recreada para soportar usuario/nombre/correo)
-    cursor.execute("DROP TABLE IF EXISTS ead_area_mapping")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS ead_area_mapping (
-        usuario TEXT PRIMARY KEY,
-        nombre TEXT,
-        correo TEXT,
-        area_id TEXT,
-        area_nombre TEXT,
-        area_path TEXT
-    )
-    """)
-    
-    # Crear tabla de mapeo de Planificadores
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS planner_mapping (
-        usuario TEXT PRIMARY KEY,
-        nombre TEXT,
-        correo TEXT,
-        division_id TEXT,
-        division_nombre TEXT
-    )
-    """)
-    
     # Pre-poblar usuarios si no existen
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
@@ -358,14 +105,6 @@ async def startup_db():
                        ("confiabilidad", get_pwd_hash("goodyear123"), "Ing. Confiabilidad L504", "ingeniero_confiabilidad"))
         cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
                        ("admin", get_pwd_hash("admin123"), "Administrador de Ingeniería", "admin"))
-    # Upgrade registros table to include ing_mantenimiento fields if they don't exist
-    cursor.execute("PRAGMA table_info(registros)")
-    columns = [row[1] for row in cursor.fetchall()]
-    if "ing_mantenimiento" not in columns:
-        cursor.execute("ALTER TABLE registros ADD COLUMN ing_mantenimiento TEXT")
-        cursor.execute("ALTER TABLE registros ADD COLUMN cargo_ing_mantenimiento TEXT")
-        cursor.execute("ALTER TABLE registros ADD COLUMN correo_ing_mantenimiento TEXT")
-        
     conn.commit()
     conn.close()
 
@@ -422,26 +161,9 @@ async def obtener_registro_detalle(registro_id: str):
         return {"error": f"Error al leer datos: {str(e)}"}
 
 @app.post("/guardar")
-async def guardar(registro: Registro, background_tasks: BackgroundTasks):
+async def guardar(registro: Registro):
     import time
     nuevo_registro = registro.dict()
-    
-    # Validar que la fecha del evento no sea posterior al día de hoy (fecha_registro)
-    fecha_evento = nuevo_registro.get("fecha")
-    fecha_registro = nuevo_registro.get("fecha_registro")
-    if fecha_evento and fecha_registro and fecha_evento > fecha_registro:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La fecha del evento no puede ser posterior a la fecha de hoy."
-        )
-    
-    # Validar que la fecha estimada de reposición no sea anterior al día de hoy (fecha_registro)
-    tiempo_reposicion = nuevo_registro.get("tiempo_reposicion")
-    if tiempo_reposicion and fecha_registro and tiempo_reposicion < fecha_registro:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La fecha estimada de reposición no puede ser anterior a la fecha de hoy."
-        )
     
     # Asignar ID si no tiene (para nuevos registros)
     if not nuevo_registro.get("id"):
@@ -457,9 +179,8 @@ async def guardar(registro: Registro, background_tasks: BackgroundTasks):
                 repuesto_codigo, repuesto_nombre, repuesto_descripcion, cantidad, razon, 
                 orden_trabajo, retirado_por, cargo_tecnico, correo_tecnico, plan_accion, 
                 tiempo_reposicion, responsable_reposicion, cargo_responsable, correo_responsable, 
-                personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado,
-                ing_mantenimiento, cargo_ing_mantenimiento, correo_ing_mantenimiento
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             nuevo_registro["id"], nuevo_registro.get("fecha", ""), nuevo_registro.get("fecha_registro", ""),
             nuevo_registro.get("maquina_donante", ""), nuevo_registro.get("maquina_receptora", ""),
@@ -472,17 +193,11 @@ async def guardar(registro: Registro, background_tasks: BackgroundTasks):
             nuevo_registro.get("cargo_responsable", ""), nuevo_registro.get("correo_responsable", ""),
             nuevo_registro.get("personal_bodega", ""), nuevo_registro.get("comentarios", ""),
             nuevo_registro.get("codigo_bodega", ""), nuevo_registro.get("usuario_registro", ""),
-            1 if nuevo_registro.get("normalizado", False) else 0,
-            nuevo_registro.get("ing_mantenimiento", ""), nuevo_registro.get("cargo_ing_mantenimiento", ""),
-            nuevo_registro.get("correo_ing_mantenimiento", "")
+            1 if nuevo_registro.get("normalizado", False) else 0
         ))
         
         conn.commit()
         conn.close()
-        
-        # Disparar envío de correo en segundo plano
-        background_tasks.add_task(enviar_correo_aviso, nuevo_registro)
-        
         return {"mensaje": "Registro guardado correctamente", "id": nuevo_registro["id"]}
     except Exception as e:
         print(f"Error al guardar registro: {e}")
@@ -642,103 +357,222 @@ async def verificar_stock(query: str, tipo: str = "codigo"):
 
 @app.get("/api/personal")
 async def buscar_personal(q: str, division: Optional[str] = None):
-    # Usamos solo el término q para la búsqueda inicial para no ser restrictivos
-    # El filtrado por división se hará en el frontend si es necesario,
-    # ya que el motor de búsqueda interno podría no manejar bien múltiples términos.
-    search_url = f"http://10.107.194.70/conn/temp/ldap.php?search={q}"
+    final_results = []
+    vistos = set()
+
+    # 1. Intentar consulta LDAP interna con timeout corto (1.0s)
     try:
-        search_res = requests.get(search_url, timeout=3, verify=False)
-        users_found = []
+        search_url = f"http://10.107.194.70/conn/temp/ldap.php?search={q}"
+        search_res = requests.get(search_url, timeout=1.0, verify=False)
         if search_res.status_code == 200:
             users_found = search_res.json()
-        
-        # Si no hay resultados de búsqueda, intentar como ID directo
-        if not users_found:
-            users_found = [{"user": q, "name": q}]
+            for u in users_found[:5]:
+                user_id = u.get("user")
+                profile_url = f"http://10.107.194.70/conn/temp/ldap.php?user={user_id}"
+                try:
+                    p_res = requests.get(profile_url, timeout=1.0, verify=False)
+                    if p_res.status_code == 200:
+                        soup = BeautifulSoup(p_res.text, 'html.parser')
+                        name_elem = soup.find('h4')
+                        nombre = name_elem.get_text(strip=True) if name_elem else u.get("name")
+                        email_tag = soup.find(id="txtMail")
+                        email = email_tag.get_text(strip=True) if email_tag else None
+                        title_tag = soup.find('span', class_='text-muted')
+                        title = title_tag.get_text(strip=True) if title_tag else "Personal"
+                        
+                        if nombre and len(nombre) > 2 and nombre.lower() not in vistos:
+                            vistos.add(nombre.lower())
+                            final_results.append({
+                                "displayName": nombre,
+                                "title": title,
+                                "email": email,
+                                "boss_name": None,
+                                "boss_id": None
+                            })
+                except Exception:
+                    continue
+    except Exception:
+        pass  # Si la red LDAP no está disponible o da timeout, se ignora silenciosamente
 
-        # Para cada usuario, obtener su perfil completo (título y correo)
-        final_results = []
-        for u in users_found[:5]: # Limitar a 5 para rapidez
-            user_id = u.get("user")
-            profile_url = f"http://10.107.194.70/conn/temp/ldap.php?user={user_id}"
+    # 2. Buscar en Estructura_Interna.xls (Excel Local)
+    try:
+        estructura = cargar_estructura_interna()
+        q_norm = normalize_text(q)
+        for item in estructura:
+            nombre = item.get("nombre", "")
+            cargo = item.get("cargo", "")
+            correo = item.get("correo", "")
             
-            try:
-                p_res = requests.get(profile_url, timeout=2, verify=False)
-                if p_res.status_code == 200:
-                    soup = BeautifulSoup(p_res.text, 'html.parser')
-                    
-                    # Extraer datos (usando la lógica refinada)
-                    name_elem = soup.find('h4')
-                    nombre = name_elem.get_text(strip=True) if name_elem else u.get("name")
-                    
-                    email_tag = soup.find(id="txtMail")
-                    email = email_tag.get_text(strip=True) if email_tag else None
-                    
-                    boss_link = soup.find('a', href=lambda h: h and '?user=' in h)
-                    boss_id = None
-                    boss_name = None
-                    if boss_link:
-                        boss_full = boss_link.get_text(strip=True)
-                        boss_name = boss_full
-                        import re
-                        m = re.search(r'\((.*?)\)', boss_full)
-                        if m: boss_id = m.group(1)
-                    
-                    title_tag = soup.find('span', class_='text-muted')
-                    title = title_tag.get_text(strip=True) if title_tag else "Personal"
-                    
-                    if nombre and len(nombre) > 3:
-                        final_results.append({
-                            "user": user_id,
-                            "displayName": nombre,
-                            "title": title,
-                            "email": email,
-                            "boss_name": boss_name,
-                            "boss_id": boss_id
-                        })
-            except:
-                continue
-
-        return final_results
-            
+            if nombre and (q_norm in normalize_text(nombre) or q_norm in normalize_text(cargo) or q_norm in normalize_text(correo)):
+                if nombre.lower() not in vistos:
+                    vistos.add(nombre.lower())
+                    final_results.append({
+                        "displayName": nombre,
+                        "title": cargo or "Personal",
+                        "email": correo or None,
+                        "boss_name": None,
+                        "boss_id": None
+                    })
     except Exception as e:
-        print(f"Error en búsqueda inteligente: {str(e)}")
+        print(f"Error buscando en Estructura_Interna: {e}")
+
+    # 3. Buscar en registros previamente guardados en la BD local
+    if os.path.exists(DB_FILE):
+        try:
+            conn = get_db_connection()
+            rows = conn.execute("""
+                SELECT DISTINCT retirado_por as nombre, cargo_tecnico as cargo, correo_tecnico as correo 
+                FROM registros 
+                WHERE retirado_por LIKE ? OR responsable_reposicion LIKE ?
+            """, (f"%{q}%", f"%{q}%")).fetchall()
+            conn.close()
+            
+            for row in rows:
+                nombre = row["nombre"]
+                if nombre and nombre.lower() not in vistos:
+                    vistos.add(nombre.lower())
+                    final_results.append({
+                        "displayName": nombre,
+                        "title": row["cargo"] or "Técnico / Personal",
+                        "email": row["correo"] or None,
+                        "boss_name": None,
+                        "boss_id": None
+                    })
+        except Exception as e:
+            print(f"Error buscando en la BD: {e}")
+
+    # 4. Opción de respaldo para ingresar el nombre tal cual si no hubo coincidencias
+    if not final_results and len(q.strip()) > 1:
+        final_results.append({
+            "displayName": q.strip(),
+            "title": "Técnico (Ingreso manual)",
+            "email": None,
+            "boss_name": None,
+            "boss_id": None
+        })
+
+    return final_results[:10]
+
+ESTRUCTURA_EXCEL_PATH = "Estructura_Interna.xls"
+_estructura_cache = None
+
+def normalize_text(text: str) -> str:
+    if not text:
+        return ""
+    text = unicodedata.normalize('NFD', str(text)).encode('ascii', 'ignore').decode('utf-8')
+    text = re.sub(r'DEPARTAMENTO\s*-\s*', '', text, flags=re.IGNORECASE)
+    return text.upper().strip()
+
+def cargar_estructura_interna():
+    global _estructura_cache
+    if _estructura_cache is not None:
+        return _estructura_cache
+    
+    registros = []
+    if not os.path.exists(ESTRUCTURA_EXCEL_PATH):
+        print(f"ADVERTENCIA: Archivo {ESTRUCTURA_EXCEL_PATH} no encontrado.")
+        return registros
+
+    try:
+        wb = xlrd.open_workbook(ESTRUCTURA_EXCEL_PATH)
+        sh = wb.sheet_by_index(0)
+        
+        for r in range(7, sh.nrows):
+            row = [sh.cell_value(r, c) for c in range(sh.ncols)]
+            if len(row) >= 10:
+                div = str(row[4]).strip()
+                depto = str(row[5]).strip()
+                area = str(row[6]).strip()
+                cargo = str(row[7]).strip()
+                nombre = str(row[8]).strip()
+                correo = str(row[9]).strip()
+                
+                if div or depto or area or nombre:
+                    registros.append({
+                        "division": div,
+                        "departamento": depto,
+                        "area": area,
+                        "cargo": cargo,
+                        "nombre": nombre,
+                        "correo": correo
+                    })
+        _estructura_cache = registros
+    except Exception as e:
+        print(f"Error al cargar Estructura_Interna.xls: {e}")
+    
+    return registros
+
+def buscar_encargados_por_path(path_str: str):
+    if not path_str:
         return []
+    
+    estructura = cargar_estructura_interna()
+    norm_path = normalize_text(path_str)
+    
+    matches = []
+    for item in estructura:
+        div_norm = normalize_text(item['division'])
+        dep_norm = normalize_text(item['departamento'])
+        area_norm = normalize_text(item['area'])
+        
+        div_match = (
+            (div_norm and div_norm in norm_path) or
+            ('DIV-A' in div_norm and ('DIVISION A' in norm_path or 'DIV-A' in norm_path)) or
+            ('DIV-B' in div_norm and ('DIVISION B' in norm_path or 'DIV-B' in norm_path)) or
+            ('FACILITIES' in div_norm and 'FACILITIES' in norm_path) or
+            ('UTILITIES' in div_norm and ('UTILIDADES' in norm_path or 'UTILITIES' in norm_path)) or
+            ('PSM' in div_norm and 'PSM' in norm_path)
+        )
+        
+        dep_match = bool(dep_norm and dep_norm in norm_path)
+        area_match = bool(area_norm and area_norm in norm_path)
+        
+        if div_match and (dep_match or area_match or item['cargo'] == 'ETL'):
+            matches.append(item)
+            
+    return matches
+
+@app.get("/api/estructura-interna")
+async def obtener_estructura_interna():
+    data = cargar_estructura_interna()
+    return {"estructura": data}
+
+@app.get("/api/encargados-area")
+async def obtener_encargados_area(path_donante: Optional[str] = None, path_receptora: Optional[str] = None):
+    donante_contacts = buscar_encargados_por_path(path_donante) if path_donante else []
+    receptora_contacts = buscar_encargados_por_path(path_receptora) if path_receptora else []
+    
+    vistos = set()
+    combinados = []
+    for c in donante_contacts + receptora_contacts:
+        correo = c.get("correo", "").lower()
+        if correo and correo not in vistos:
+            vistos.add(correo)
+            combinados.append(c)
+        elif not correo:
+            combinados.append(c)
+
+    responsable_sugerido = None
+    for c in donante_contacts + receptora_contacts:
+        if c.get("cargo") == "Planner":
+            responsable_sugerido = c
+            break
+    if not responsable_sugerido:
+        for c in donante_contacts + receptora_contacts:
+            if "Ingeniero" in c.get("cargo", "") or "Cordinador" in c.get("cargo", ""):
+                responsable_sugerido = c
+                break
+
+    return {
+        "donante": donante_contacts,
+        "receptora": receptora_contacts,
+        "combinados": combinados,
+        "responsable_sugerido": responsable_sugerido,
+        "correos_notificacion": list(vistos)
+    }
 
 @app.post("/api/login")
 async def login(req: LoginRequest):
-    # 1. Intentar autenticación mediante LDAP
-    ldap_res = authenticate_user_ldap(req.usuario, req.contrasena)
-    if ldap_res.get("success"):
-        token = str(uuid.uuid4())
-        rol = ldap_res["rol"]
-        nombre = ldap_res["nombre"]
-        
-        # Verificar si hay una asignación local de rol para este usuario de red
-        conn = get_db_connection()
-        local_user = conn.execute("SELECT rol, nombre FROM usuarios WHERE usuario = ?", (ldap_res["usuario"],)).fetchone()
-        conn.close()
-        
-        if local_user:
-            rol = local_user["rol"]
-            if local_user["nombre"]:
-                nombre = local_user["nombre"]
-                
-        ACTIVE_SESSIONS[token] = {
-            "usuario": ldap_res["usuario"],
-            "rol": rol,
-            "nombre": nombre,
-            "last_activity": time.time()
-        }
-        return {
-            "success": True,
-            "token": token,
-            "usuario": ldap_res["usuario"],
-            "rol": rol,
-            "nombre": nombre
-        }
-        
-    # 2. Fallback a la base de datos local
     pwd_hash = hashlib.sha256(req.contrasena.encode()).hexdigest()
     conn = get_db_connection()
     user = conn.execute("SELECT * FROM usuarios WHERE usuario = ? AND contrasena_hash = ?", 
@@ -746,11 +580,9 @@ async def login(req: LoginRequest):
     conn.close()
     
     if user is None:
-        # Si falló tanto LDAP como el fallback local
-        error_detail = ldap_res.get("error") or "Usuario o contraseña incorrectos"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Error de autenticación: {error_detail}"
+            detail="Usuario o contraseña incorrectos"
         )
         
     token = str(uuid.uuid4())
@@ -813,16 +645,6 @@ async def editar_fecha(req: EditDateRequest):
         
     valor_anterior = registro["tiempo_reposicion"]
     
-    # Validar que la nueva fecha no sea anterior al día de hoy
-    from datetime import date
-    hoy_str = date.today().strftime("%Y-%m-%d")
-    if req.nueva_fecha < hoy_str:
-        conn.close()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La nueva fecha estimada de reposición no puede ser anterior al día de hoy."
-        )
-
     # 4. Actualizar fecha
     conn.execute("UPDATE registros SET tiempo_reposicion = ? WHERE id = ?", (req.nueva_fecha, req.registro_id))
     
@@ -858,231 +680,6 @@ async def obtener_historial(registro_id: str):
     
     lista_cambios = [dict(c) for c in cambios]
     return {"historial": lista_cambios}
-
-# Servir archivos estáticos (index.html, styles.css)
-
-@app.get("/api/destinatarios_disponibles")
-async def obtener_destinatarios_disponibles():
-    from ldap_utils import get_members_for_role
-    try:
-        etl_members = get_members_for_role('etl')
-        bodega_members = get_members_for_role('bodega')
-        return {
-            "etl": etl_members,
-            "bodega": bodega_members
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al obtener destinatarios de LDAP: {str(e)}"
-        )
-
-@app.get("/api/admin/enviar_resumen_semanal")
-async def trigger_enviar_resumen_semanal(background_tasks: BackgroundTasks):
-    try:
-        import subprocess
-        def run_script():
-            env_py = os.path.join(os.path.dirname(__file__), ".venv", "bin", "python3")
-            script_path = os.path.join(os.path.dirname(__file__), "enviar_resumen_semanal.py")
-            if not os.path.exists(env_py):
-                env_py = "python3"
-            subprocess.run([env_py, script_path], check=True)
-            
-        background_tasks.add_task(run_script)
-        return {"success": True, "mensaje": "Ejecución del reporte semanal iniciada en segundo plano."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def verify_admin_session(token: str):
-    if token not in ACTIVE_SESSIONS:
-        raise HTTPException(status_code=401, detail="Sesión inválida o expirada.")
-    session = ACTIVE_SESSIONS[token]
-    if time.time() - session.get("last_activity", 0) > SESSION_TIMEOUT_SECONDS:
-        del ACTIVE_SESSIONS[token]
-        raise HTTPException(status_code=401, detail="La sesión ha expirado por inactividad.")
-    session["last_activity"] = time.time()
-    if session.get("rol") != "admin":
-        raise HTTPException(status_code=403, detail="Acceso denegado: Se requiere rol de Administrador.")
-    return session
-
-@app.get("/api/admin/tree_elements")
-async def get_tree_elements():
-    try:
-        filename = "arbol_equipos.json" if os.path.exists("arbol_equipos.json") else "arbol_equipos_test.json"
-        with open(filename, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            
-        divisions = []
-        departments = []
-        
-        for div in data.get("divisiones", []):
-            div_name = div.get("nombre", "")
-            div_id = div.get("id", "")
-            divisions.append({
-                "id": div_id,
-                "nombre": div_name
-            })
-            
-            # Solo tomar los hijos directos de la división (Nivel 2 / Departamentos)
-            for dept in div.get("hijos", []):
-                dept_name = dept.get("nombre", "")
-                dept_id = dept.get("id", "")
-                if dept_id:
-                    departments.append({
-                        "id": dept_id,
-                        "nombre": dept_name,
-                        "path": f"{div_name} > {dept_name}"
-                    })
-            
-        return {
-            "divisions": divisions,
-            "departments": sorted(departments, key=lambda x: x["path"])
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al leer el árbol de equipos: {str(e)}")
-
-@app.get("/api/admin/config")
-async def get_admin_config(token: str):
-    verify_admin_session(token)
-    conn = get_db_connection()
-    etls = conn.execute("SELECT * FROM etl_division_mapping").fetchall()
-    eads = conn.execute("SELECT * FROM ead_area_mapping").fetchall()
-    planners = conn.execute("SELECT * FROM planner_mapping").fetchall()
-    conn.close()
-    
-    return {
-        "etls": [dict(r) for r in etls],
-        "eads": [dict(r) for r in eads],
-        "planners": [dict(r) for r in planners]
-    }
-
-@app.post("/api/admin/config/etl")
-async def save_etl_mapping(req: ETLMappingRequest):
-    verify_admin_session(req.token)
-    conn = get_db_connection()
-    try:
-        conn.execute("""
-            INSERT OR REPLACE INTO etl_division_mapping (usuario, nombre, correo, division_id, division_nombre)
-            VALUES (?, ?, ?, ?, ?)
-        """, (req.usuario, req.nombre, req.correo, req.division_id, req.division_nombre))
-        conn.commit()
-        return {"success": True, "mensaje": "Asignación de ETL guardada correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-@app.post("/api/admin/config/ead")
-async def save_ead_mapping(req: EADMappingRequest):
-    verify_admin_session(req.token)
-    conn = get_db_connection()
-    try:
-        conn.execute("""
-            INSERT OR REPLACE INTO ead_area_mapping (usuario, nombre, correo, area_id, area_nombre, area_path)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (req.usuario, req.nombre, req.correo, req.area_id, req.area_nombre, req.area_path))
-        conn.commit()
-        return {"success": True, "mensaje": "Asociación de área EAD guardada correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-@app.delete("/api/admin/config/ead/{usuario}")
-async def delete_ead_mapping(usuario: str, token: str):
-    verify_admin_session(token)
-    conn = get_db_connection()
-    try:
-        conn.execute("DELETE FROM ead_area_mapping WHERE usuario = ?", (usuario,))
-        conn.commit()
-        return {"success": True, "mensaje": "Área EAD eliminada correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-@app.post("/api/admin/config/planner")
-async def save_planner_mapping(req: PlannerMappingRequest):
-    verify_admin_session(req.token)
-    conn = get_db_connection()
-    try:
-        conn.execute("""
-            INSERT OR REPLACE INTO planner_mapping (usuario, nombre, correo, division_id, division_nombre)
-            VALUES (?, ?, ?, ?, ?)
-        """, (req.usuario, req.nombre, req.correo, req.division_id, req.division_nombre))
-        conn.commit()
-        return {"success": True, "mensaje": "Planificador registrado correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-@app.delete("/api/admin/config/planner/{usuario}")
-async def delete_planner_mapping(usuario: str, token: str):
-    verify_admin_session(token)
-    conn = get_db_connection()
-    try:
-        conn.execute("DELETE FROM planner_mapping WHERE usuario = ?", (usuario,))
-        conn.commit()
-        return {"success": True, "mensaje": "Planificador eliminado correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-class LocalUserRequest(BaseModel):
-    usuario: str
-    nombre: str
-    rol: str
-    contrasena: Optional[str] = None
-    token: str
-
-@app.get("/api/admin/users")
-async def get_local_users(token: str):
-    verify_admin_session(token)
-    conn = get_db_connection()
-    users = conn.execute("SELECT usuario, nombre, rol FROM usuarios").fetchall()
-    conn.close()
-    return {"users": [dict(u) for u in users]}
-
-@app.post("/api/admin/users")
-async def save_local_user(req: LocalUserRequest):
-    verify_admin_session(req.token)
-    conn = get_db_connection()
-    try:
-        exist = conn.execute("SELECT contrasena_hash FROM usuarios WHERE usuario = ?", (req.usuario,)).fetchone()
-        if req.contrasena:
-            pwd_hash = hashlib.sha256(req.contrasena.encode()).hexdigest()
-        elif exist:
-            pwd_hash = exist["contrasena_hash"]
-        else:
-            pwd_hash = hashlib.sha256("goodyear123".encode()).hexdigest()
-            
-        conn.execute("""
-            INSERT OR REPLACE INTO usuarios (usuario, contrasena_hash, nombre, rol)
-            VALUES (?, ?, ?, ?)
-        """, (req.usuario, pwd_hash, req.nombre, req.rol))
-        conn.commit()
-        return {"success": True, "mensaje": "Usuario guardado con éxito."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-
-@app.delete("/api/admin/users/{usuario}")
-async def delete_local_user(usuario: str, token: str):
-    verify_admin_session(token)
-    if usuario == "admin":
-        raise HTTPException(status_code=400, detail="No se puede eliminar el usuario administrador principal.")
-    conn = get_db_connection()
-    try:
-        conn.execute("DELETE FROM usuarios WHERE usuario = ?", (usuario,))
-        conn.commit()
-        return {"success": True, "mensaje": "Usuario eliminado correctamente."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
 
 # Servir archivos estáticos (index.html, styles.css)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

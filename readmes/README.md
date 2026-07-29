@@ -18,5 +18,10 @@ Toda la documentación técnica, manuales, registros de avances y guías se encu
    - Parámetros de configuración (tiempos de inactividad de sesión).
    - Guía paso a paso sobre cómo puedes escribir y generar tus propios archivos Markdown `.md`.
 
+3. **[Registro de Ajustes y Corrección de Servidor](AJUSTES_REALIZADOS.md)**:
+   - Diagnóstico y corrección del error `ModuleNotFoundError: No module named 'xlrd'`.
+   - Inclusión de dependencias (`xlrd` y `ldap3`) en `requirements.txt`.
+   - Verificación y sincronización del entorno virtual.
+
 ---
 *Goodyear L504 - Área de Confiabilidad e Ingeniería de Mantenimiento*
