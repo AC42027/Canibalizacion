@@ -1770,7 +1770,15 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            document.getElementById('fecha_registro').value = `${year}-${month}-${day}`;
+            const todayStr = `${year}-${month}-${day}`;
+
+            document.getElementById('fecha_registro').value = todayStr;
+
+            const fechaInput = document.querySelector('input[name="fecha"]');
+            if (fechaInput) fechaInput.max = todayStr;
+
+            const reposicionInput = document.querySelector('input[name="tiempo_reposicion"]');
+            if (reposicionInput) reposicionInput.min = todayStr;
 
             // 2. Cargar equipos (proceso pesado)
             cargarEquipos().catch(err => console.error("Error equipos:", err));
@@ -1851,6 +1859,23 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
             // Garantizar que personal_bodega se envíe como cadena vacía si no existe (por estar deshabilitado)
             if (!data.hasOwnProperty('personal_bodega')) {
                 data.personal_bodega = "";
+            }
+
+            // Validar restricciones de fechas
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            if (data.fecha && data.fecha > todayStr) {
+                alert('La fecha del evento no puede ser posterior a la fecha de hoy.');
+                return;
+            }
+
+            if (data.tiempo_reposicion && data.tiempo_reposicion < todayStr) {
+                alert('La fecha de reposición no puede ser menor a la fecha de hoy.');
+                return;
             }
 
             // Validar que se hayan seleccionado las máquinas

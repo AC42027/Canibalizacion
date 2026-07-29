@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from datetime import date, timedelta
 import sqlite3
 from fastapi.testclient import TestClient
 from app import app
@@ -25,11 +25,12 @@ class TestCanibalizacion(unittest.TestCase):
         data = response.json()
         self.assertIn("canibalizaciones", data)
 
-    @patch('app.enviar_correo')
-    def test_guardar_registro_fecha_valida(self, mock_enviar_correo):
+    def test_guardar_registro_fecha_valida(self):
+        hoy = date.today().strftime("%Y-%m-%d")
+        futuro = (date.today() + timedelta(days=5)).strftime("%Y-%m-%d")
         payload = {
-            "fecha": "2026-07-04",
-            "fecha_registro": "2026-07-04",
+            "fecha": hoy,
+            "fecha_registro": hoy,
             "maquina_donante": "Maquina A",
             "maquina_receptora": "Maquina B",
             "repuesto_nombre": "Rodamiento Test",
@@ -39,7 +40,7 @@ class TestCanibalizacion(unittest.TestCase):
             "orden_trabajo": "OT-TEST",
             "retirado_por": "Tester",
             "plan_accion": "Prueba de accion",
-            "tiempo_reposicion": "2026-07-10",
+            "tiempo_reposicion": futuro,
             "responsable_reposicion": "Responsable Test"
         }
         registro_id = None
@@ -58,11 +59,12 @@ class TestCanibalizacion(unittest.TestCase):
                 conn.commit()
                 conn.close()
 
-    @patch('app.enviar_correo')
-    def test_guardar_registro_fecha_futura(self, mock_enviar_correo):
+    def test_guardar_registro_fecha_futura(self):
+        hoy = date.today().strftime("%Y-%m-%d")
+        futuro = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
         payload = {
-            "fecha": "2026-07-05",  # Fecha futura respecto a fecha_registro (2026-07-04)
-            "fecha_registro": "2026-07-04",
+            "fecha": futuro,  # Fecha futura no permitida para el evento
+            "fecha_registro": hoy,
             "maquina_donante": "Maquina A",
             "maquina_receptora": "Maquina B",
             "repuesto_nombre": "Rodamiento Test Futuro",
@@ -72,7 +74,7 @@ class TestCanibalizacion(unittest.TestCase):
             "orden_trabajo": "OT-TEST",
             "retirado_por": "Tester",
             "plan_accion": "Prueba de accion",
-            "tiempo_reposicion": "2026-07-10",
+            "tiempo_reposicion": futuro,
             "responsable_reposicion": "Responsable Test"
         }
         response = self.client.post("/guardar", json=payload)
@@ -81,11 +83,12 @@ class TestCanibalizacion(unittest.TestCase):
         self.assertIn("detail", data)
         self.assertEqual(data["detail"], "La fecha del evento no puede ser posterior a la fecha de hoy.")
 
-    @patch('app.enviar_correo')
-    def test_guardar_registro_reposicion_pasada(self, mock_enviar_correo):
+    def test_guardar_registro_reposicion_pasada(self):
+        hoy = date.today().strftime("%Y-%m-%d")
+        ayer = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
         payload = {
-            "fecha": "2026-07-04",
-            "fecha_registro": "2026-07-04",
+            "fecha": hoy,
+            "fecha_registro": hoy,
             "maquina_donante": "Maquina A",
             "maquina_receptora": "Maquina B",
             "repuesto_nombre": "Rodamiento Test Pasado",
@@ -95,7 +98,7 @@ class TestCanibalizacion(unittest.TestCase):
             "orden_trabajo": "OT-TEST",
             "retirado_por": "Tester",
             "plan_accion": "Prueba de accion",
-            "tiempo_reposicion": "2026-07-03",  # Fecha pasada respecto a fecha_registro (2026-07-04)
+            "tiempo_reposicion": ayer,  # Fecha pasada no permitida para reposición
             "responsable_reposicion": "Responsable Test"
         }
         response = self.client.post("/guardar", json=payload)
@@ -115,7 +118,6 @@ class TestCanibalizacion(unittest.TestCase):
             "last_activity": time.time()
         }
         try:
-            from datetime import date, timedelta
             ayer = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
             payload = {
                 "registro_id": "dummy-id",
@@ -125,7 +127,7 @@ class TestCanibalizacion(unittest.TestCase):
             response = self.client.post("/api/registros/editar_fecha", json=payload)
             self.assertEqual(response.status_code, 400)
             data = response.json()
-            self.assertEqual(data["detail"], "La nueva fecha estimada de reposición no puede ser anterior al día de hoy.")
+            self.assertEqual(data["detail"], "La nueva fecha estimada de reposición no puede ser anterior a la fecha de hoy.")
         finally:
             if token in ACTIVE_SESSIONS:
                 del ACTIVE_SESSIONS[token]

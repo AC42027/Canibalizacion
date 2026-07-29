@@ -442,8 +442,17 @@
                 window.accionPendiente = { tipo: 'editar_fecha', data: fechaActual };
                 abrirModal('modalLogin');
             } else {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
                 const dateInput = document.getElementById('nuevaFechaInput');
-                if (dateInput) dateInput.value = fechaActual;
+                if (dateInput) {
+                    dateInput.value = fechaActual;
+                    dateInput.min = todayStr;
+                }
                 abrirModal('modalEditarFecha');
             }
         }
@@ -508,6 +517,18 @@
 
             if (!id || !nuevaFecha || !token) {
                 alert('Faltan datos requeridos.');
+                return;
+            }
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            if (nuevaFecha < todayStr) {
+                errorDiv.innerText = 'La fecha de reposición no puede ser menor a la fecha de hoy.';
+                errorDiv.style.display = 'block';
                 return;
             }
 

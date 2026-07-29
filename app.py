@@ -81,6 +81,35 @@ async def startup_db():
         rol TEXT
     )
     """)
+    # Crear tabla de registros
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS registros (
+        id TEXT PRIMARY KEY,
+        fecha TEXT,
+        fecha_registro TEXT,
+        maquina_donante TEXT,
+        maquina_receptora TEXT,
+        repuesto_codigo TEXT,
+        repuesto_nombre TEXT,
+        repuesto_descripcion TEXT,
+        cantidad INTEGER,
+        razon TEXT,
+        orden_trabajo TEXT,
+        retirado_por TEXT,
+        cargo_tecnico TEXT,
+        correo_tecnico TEXT,
+        plan_accion TEXT,
+        tiempo_reposicion TEXT,
+        responsable_reposicion TEXT,
+        cargo_responsable TEXT,
+        correo_responsable TEXT,
+        personal_bodega TEXT,
+        comentarios TEXT,
+        codigo_bodega TEXT,
+        usuario_registro TEXT,
+        normalizado INTEGER DEFAULT 0
+    )
+    """)
     # Crear tabla de historial de cambios
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS historial_cambios (
@@ -165,9 +194,21 @@ async def guardar(registro: Registro):
     import time
     nuevo_registro = registro.dict()
     
-    # Asignar ID si no tiene (para nuevos registros)
-    if not nuevo_registro.get("id"):
-        nuevo_registro["id"] = str(int(time.time() * 1000))
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Validar fecha del evento (no puede ser posterior a la fecha de hoy)
+    if nuevo_registro.get("fecha") and nuevo_registro.get("fecha") > today_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La fecha del evento no puede ser posterior a la fecha de hoy."
+        )
+
+    # Validar fecha de reposición (no puede ser menor a la fecha de hoy)
+    if nuevo_registro.get("tiempo_reposicion") and nuevo_registro.get("tiempo_reposicion") < today_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La fecha estimada de reposición no puede ser anterior a la fecha de hoy."
+        )
 
     try:
         conn = get_db_connection()
@@ -633,6 +674,13 @@ async def editar_fecha(req: EditDateRequest):
             detail="No tiene permisos para editar la fecha de reposición"
         )
         
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if req.nueva_fecha and req.nueva_fecha < today_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva fecha estimada de reposición no puede ser anterior a la fecha de hoy."
+        )
+
     conn = get_db_connection()
     # 3. Obtener valor anterior
     registro = conn.execute("SELECT tiempo_reposicion FROM registros WHERE id = ?", (req.registro_id,)).fetchone()
