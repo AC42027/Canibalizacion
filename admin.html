@@ -176,23 +176,55 @@
         #errorContainer { display: none; text-align: center; padding: 5rem 2rem; }
         #errorContainer h2 { color: #ef4444; margin-bottom: 1rem; font-family: 'Outfit', sans-serif; }
     </style>
+    <script>
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                const currentDisplay = window.getComputedStyle(modal).display;
+                if (currentDisplay === 'none') {
+                    modal.style.display = 'flex';
+                    const err = document.getElementById('loginError');
+                    if (err) err.style.display = 'none';
+                } else {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+        window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+    </script>
 </head>
 <body>
 
     <nav class="navbar">
         <a href="history.html" class="btn-back">← Volver al Historial</a>
         <a href="#" class="navbar-brand">GOODYEAR | PANEL DE ADMINISTRACIÓN</a>
-        <div style="font-size: 0.8rem; opacity: 0.8;">Planta L504 - Control de Activos</div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div id="sessionIndicator" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem;">
+                <span id="sessionUserName" style="font-weight: 700; color: var(--accent-yellow);">👤 Invitado / Sin sesión</span>
+                <button id="btnLoginLogout" onclick="toggleLoginModal()" style="background: var(--accent-yellow); color: var(--primary); border: none; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; cursor: pointer;">
+                    🔑 Iniciar Sesión
+                </button>
+            </div>
+            <div style="font-size: 0.8rem; opacity: 0.8;">Planta L504 - Control de Activos</div>
+        </div>
     </nav>
 
     <!-- Pantalla de Error de Permiso -->
-    <div id="errorContainer" class="container card">
-        <h2>Acceso Restringido</h2>
+    <div id="errorContainer" class="container card" style="text-align: center; padding: 3rem 2rem;">
+        <h2 style="color: #ef4444; margin-bottom: 1rem;">Acceso Restringido</h2>
         <p>No tienes privilegios suficientes para acceder al panel de administración.</p>
         <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
-            Por favor, inicia sesión con una cuenta de <strong>Administrador</strong>.
+            Por favor, inicia sesión con una cuenta de <strong>Administrador</strong> (ej: <code>admin</code> / <code>admin123</code> o <code>ac42028</code>).
         </p>
-        <a href="history.html" class="btn-submit" style="display: inline-block; margin-top: 1.5rem; text-decoration: none;">Volver al Historial</a>
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
+            <button onclick="toggleLoginModal()" class="btn-submit" style="cursor: pointer;">🔑 Iniciar Sesión Ahora</button>
+            <a href="history.html" class="btn-submit" style="background: #94a3b8; border-color: #64748b; color: white; text-decoration: none;">Volver al Historial</a>
+        </div>
     </div>
 
     <!-- Contenido Principal -->
@@ -409,8 +441,8 @@
 
     <script>
         // Guard de seguridad admin
-        const token = sessionStorage.getItem('session_token');
-        const rol = sessionStorage.getItem('session_rol');
+        const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+        const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
 
         if (!token || rol !== 'admin') {
             document.getElementById('mainContainer').style.display = 'none';
@@ -799,8 +831,149 @@
             }
         }
 
+        function actualizarIndicadorSesion() {
+            const tokenVal = sessionStorage.getItem('session_token');
+            const usuarioVal = sessionStorage.getItem('session_usuario');
+            const nombreVal = sessionStorage.getItem('session_nombre');
+            const rolVal = sessionStorage.getItem('session_rol');
+
+            const nameSpan = document.getElementById('sessionUserName');
+            const btnLoginLogout = document.getElementById('btnLoginLogout');
+
+            if (tokenVal && usuarioVal) {
+                if (nameSpan) nameSpan.innerHTML = `👤 <b>${nombreVal || usuarioVal}</b> <small style="opacity:0.85; margin-left:2px;">(${rolVal || 'Usuario'})</small>`;
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🚪 Cerrar Sesión';
+                    btnLoginLogout.onclick = cerrarSesion;
+                    btnLoginLogout.style.background = '#fee2e2';
+                    btnLoginLogout.style.color = '#991b1b';
+                }
+            } else {
+                if (nameSpan) nameSpan.innerText = '👤 Invitado / Sin sesión';
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🔑 Iniciar Sesión';
+                    btnLoginLogout.onclick = toggleLoginModal;
+                    btnLoginLogout.style.background = 'var(--accent-yellow)';
+                    btnLoginLogout.style.color = 'var(--primary)';
+                }
+            }
+        }
+
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                modal.style.display = 'flex';
+                const err = document.getElementById('loginError');
+                if (err) err.style.display = 'none';
+            }
+        }
+
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function quickLogin(user, pass) {
+            document.getElementById('loginUsuario').value = user;
+            document.getElementById('loginContrasena').value = pass;
+            await procesarLogin(new Event('submit'));
+        }
+
+        async function procesarLogin(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const contrasena = document.getElementById('loginContrasena').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contrasena })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    sessionStorage.setItem('session_token', data.token);
+                    sessionStorage.setItem('session_usuario', data.usuario);
+                    sessionStorage.setItem('session_rol', data.rol);
+                    sessionStorage.setItem('session_nombre', data.nombre);
+
+                    localStorage.setItem('session_token', data.token);
+                    localStorage.setItem('session_usuario', data.usuario);
+                    localStorage.setItem('session_rol', data.rol);
+                    localStorage.setItem('session_nombre', data.nombre);
+
+                    cerrarModal('modalLogin');
+                    location.reload();
+                    return;
+                } else {
+                    if (errorDiv) {
+                        errorDiv.innerText = data.detail || 'Usuario o contraseña incorrectos';
+                        errorDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.warn("Fallo backend /api/login, usando fallback local:", err);
+            }
+
+            // Fallback Local de Prueba
+            const MOCK_USERS = {
+                'planificador': { rol: 'planificador', nombre: 'Planificador L504', pass: 'goodyear123' },
+                'confiabilidad': { rol: 'ingeniero_confiabilidad', nombre: 'Ing. Confiabilidad L504', pass: 'goodyear123' },
+                'admin': { rol: 'admin', nombre: 'Administrador de Ingeniería', pass: 'admin123' },
+                'ac42028': { rol: 'admin', nombre: 'Usuario AC42028 (Pruebas)', pass: 'goodyear123' }
+            };
+
+            const userKey = usuario.toLowerCase();
+            if (MOCK_USERS[userKey] && (MOCK_USERS[userKey].pass === contrasena || contrasena === 'goodyear123' || contrasena === 'admin123')) {
+                const mock = MOCK_USERS[userKey];
+                sessionStorage.setItem('session_token', 'local-token-' + Date.now());
+                sessionStorage.setItem('session_usuario', userKey);
+                sessionStorage.setItem('session_rol', mock.rol);
+                sessionStorage.setItem('session_nombre', mock.nombre);
+
+                localStorage.setItem('session_token', 'local-token-' + Date.now());
+                localStorage.setItem('session_usuario', userKey);
+                localStorage.setItem('session_rol', mock.rol);
+                localStorage.setItem('session_nombre', mock.nombre);
+
+                cerrarModal('modalLogin');
+                location.reload();
+            } else {
+                if (errorDiv) {
+                    errorDiv.innerText = 'Usuario o contraseña incorrectos';
+                    errorDiv.style.display = 'block';
+                }
+            }
+        }
+
+        async function cerrarSesion() {
+            const tokenVal = sessionStorage.getItem('session_token');
+            if (tokenVal) {
+                try {
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: tokenVal })
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            sessionStorage.clear();
+            localStorage.clear();
+            location.reload();
+        }
+
         // Inicialización al cargar
         document.addEventListener('DOMContentLoaded', () => {
+                    window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+        window.cerrarSesion = cerrarSesion;
+        window.quickLogin = quickLogin;
+        window.procesarLogin = procesarLogin;
+        actualizarIndicadorSesion();
             if (token && rol === 'admin') {
                 loadTreeData();
                 loadConfigData();
@@ -811,5 +984,55 @@
             }
         });
     </script>
+
+    <!-- Modal de Login Universal -->
+    <div id="modalLogin" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; width: 90%; max-width: 440px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid #e2e8f0; animation: fadeIn 0.2s ease-out;">
+            <div style="padding: 1.25rem 1.5rem; background: #002855; color: white; border-bottom: 3px solid #FFDD00; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0; font-size: 1.15rem; color: #FFDD00; font-weight: 800; font-family: 'Outfit', sans-serif;">🔑 Acceso de Administrador</h2>
+                <button type="button" onclick="cerrarModal('modalLogin')" style="background: none; border: none; font-size: 1.75rem; cursor: pointer; color: #FFDD00; line-height: 1;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; line-height: 1.4;">
+                    Ingrese con su cuenta autorizada de Administrador o seleccione una cuenta de prueba rápida a continuación:
+                </p>
+                <form id="formLogin" onsubmit="procesarLogin(event)">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Usuario</label>
+                        <input type="text" id="loginUsuario" required placeholder="Ej: admin, ac42028..." style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Contraseña</label>
+                        <input type="password" id="loginContrasena" required placeholder="••••••••" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <button type="submit" style="width: 100%; padding: 0.75rem; background: #002855; color: #FFDD00; border: 2px solid #FFDD00; border-radius: 0.5rem; font-weight: 800; cursor: pointer; font-size: 0.95rem; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,40,85,0.2);">Iniciar Sesión</button>
+                    <div id="loginError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
+                </form>
+
+                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
+                    <strong style="color: #002855; display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <button type="button" onclick="quickLogin('admin', 'admin123')" style="text-align: left; padding: 6px 10px; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👑 <b>admin</b> <small style="color:#854d0e;">(Administrador)</small></span>
+                            <span style="color:#854d0e; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('ac42028', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🔧 <b>ac42028</b> <small style="color:#1d4ed8;">(Técnico / Pruebas)</small></span>
+                            <span style="color:#1e40af; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>planificador</b> <small style="color:#64748b;">(Planificador)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('confiabilidad', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>confiabilidad</b> <small style="color:#64748b;">(Ing. Confiabilidad)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body, HTTPException, status
+from fastapi import FastAPI, Body, HTTPException, status, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -21,6 +21,10 @@ SESSION_TIMEOUT_SECONDS = 900  # 15 minutos
 ACTIVE_SESSIONS = {}  # token -> {"usuario": str, "rol": str, "nombre": str, "last_activity": float}
 
 app = FastAPI(title="Canibalización API")
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204)
 
 # Modelo de datos para validación
 class LoginRequest(BaseModel):
@@ -134,6 +138,54 @@ async def startup_db():
                        ("confiabilidad", get_pwd_hash("goodyear123"), "Ing. Confiabilidad L504", "ingeniero_confiabilidad"))
         cursor.execute("INSERT INTO usuarios (usuario, contrasena_hash, nombre, rol) VALUES (?, ?, ?, ?)",
                        ("admin", get_pwd_hash("admin123"), "Administrador de Ingeniería", "admin"))
+    
+    # Asegurar usuario ac42028 para pruebas
+    def get_pwd_hash(password: str) -> str:
+        return hashlib.sha256(password.encode()).hexdigest()
+    cursor.execute("""
+    INSERT OR IGNORE INTO usuarios (usuario, contrasena_hash, nombre, rol) 
+    VALUES ('ac42028', ?, 'Usuario AC42028 (Pruebas)', 'admin')
+    """, (get_pwd_hash("goodyear123"),))
+    conn.commit()
+    cursor.execute("SELECT rowid, * FROM registros WHERE id IS NULL OR id = '' OR id = 'None'")
+    null_rows = cursor.fetchall()
+    for index, row in enumerate(null_rows):
+        new_id = str(int(time.time() * 1000) + index)
+        cursor.execute("UPDATE registros SET id = ? WHERE rowid = ?", (new_id, row["rowid"]))
+
+    # Si la tabla de registros está vacía o solo tenía pruebas, y existe data.json, migrar datos iniciales
+    cursor.execute("SELECT COUNT(*) FROM registros")
+    if cursor.fetchone()[0] == 0 and os.path.exists("data.json"):
+        try:
+            with open("data.json", "r", encoding="utf-8") as f:
+                datos_json = json.load(f)
+                for r in datos_json.get("canibalizaciones", []):
+                    reg_id = str(r.get("id")) if r.get("id") else str(int(time.time() * 1000))
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO registros (
+                            id, fecha, fecha_registro, maquina_donante, maquina_receptora, 
+                            repuesto_codigo, repuesto_nombre, repuesto_descripcion, cantidad, razon, 
+                            orden_trabajo, retirado_por, cargo_tecnico, correo_tecnico, plan_accion, 
+                            tiempo_reposicion, responsable_reposicion, cargo_responsable, correo_responsable, 
+                            personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        reg_id, r.get("fecha", ""), r.get("fecha_registro", ""),
+                        r.get("maquina_donante", ""), r.get("maquina_receptora", ""),
+                        r.get("repuesto_codigo", ""), r.get("repuesto_nombre", ""),
+                        r.get("repuesto_descripcion", ""), int(r.get("cantidad", 1)),
+                        r.get("razon", ""), r.get("orden_trabajo", ""),
+                        r.get("retirado_por", ""), r.get("cargo_tecnico", ""),
+                        r.get("correo_tecnico", ""), r.get("plan_accion", ""),
+                        r.get("tiempo_reposicion", ""), r.get("responsable_reposicion", ""),
+                        r.get("cargo_responsable", ""), r.get("correo_responsable", ""),
+                        r.get("personal_bodega", ""), r.get("comentarios", ""),
+                        r.get("codigo_bodega", ""), r.get("usuario_registro", ""),
+                        1 if r.get("normalizado", False) else 0
+                    ))
+        except Exception as err:
+            print(f"Error al auto-migrar data.json: {err}")
+
     conn.commit()
     conn.close()
 
@@ -189,11 +241,28 @@ async def obtener_registro_detalle(registro_id: str):
     except Exception as e:
         return {"error": f"Error al leer datos: {str(e)}"}
 
+@app.delete("/api/registros/{registro_id}")
+async def eliminar_registro(registro_id: str):
+    if not os.path.exists(DB_FILE):
+        return {"error": "No hay datos"}
+    try:
+        conn = get_db_connection()
+        conn.execute('DELETE FROM registros WHERE id = ?', (registro_id,))
+        conn.commit()
+        conn.close()
+        return {"success": True, "mensaje": "Registro eliminado correctamente"}
+    except Exception as e:
+        return {"error": f"Error al eliminar registro: {str(e)}"}
+
 @app.post("/guardar")
 async def guardar(registro: Registro):
     import time
     nuevo_registro = registro.dict()
     
+    # Generar un ID único si no se proporcionó
+    if not nuevo_registro.get("id"):
+        nuevo_registro["id"] = str(int(time.time() * 1000))
+
     today_str = datetime.now().strftime("%Y-%m-%d")
 
     # Validar fecha del evento (no puede ser posterior a la fecha de hoy)
@@ -223,7 +292,7 @@ async def guardar(registro: Registro):
                 personal_bodega, comentarios, codigo_bodega, usuario_registro, normalizado
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            nuevo_registro["id"], nuevo_registro.get("fecha", ""), nuevo_registro.get("fecha_registro", ""),
+            str(nuevo_registro["id"]), nuevo_registro.get("fecha", ""), nuevo_registro.get("fecha_registro", ""),
             nuevo_registro.get("maquina_donante", ""), nuevo_registro.get("maquina_receptora", ""),
             nuevo_registro.get("repuesto_codigo", ""), nuevo_registro.get("repuesto_nombre", ""),
             nuevo_registro.get("repuesto_descripcion", ""), int(nuevo_registro.get("cantidad", 0)),
@@ -239,7 +308,7 @@ async def guardar(registro: Registro):
         
         conn.commit()
         conn.close()
-        return {"mensaje": "Registro guardado correctamente", "id": nuevo_registro["id"]}
+        return {"mensaje": "Registro guardado correctamente", "id": str(nuevo_registro["id"])}
     except Exception as e:
         print(f"Error al guardar registro: {e}")
         return {"error": f"Error interno: {str(e)}"}
@@ -728,6 +797,79 @@ async def obtener_historial(registro_id: str):
     
     lista_cambios = [dict(c) for c in cambios]
     return {"historial": lista_cambios}
+
+class EnviarCorreoBackendRequest(BaseModel):
+    destinatarios: list[str]
+    asunto: str
+    mensaje: str
+    html_body: Optional[str] = None
+
+@app.post("/api/enviar-correo-backend")
+async def enviar_correo_backend(req: EnviarCorreoBackendRequest):
+    try:
+        from ldap_utils import load_env
+        load_env()
+    except Exception as e:
+        print(f"Aviso al cargar env: {e}")
+
+    smtp_server = os.environ.get("SMTP_SERVER", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_use_tls = os.environ.get("SMTP_USE_TLS", "True").lower() in ("true", "1", "yes")
+    smtp_use_ssl = os.environ.get("SMTP_USE_SSL", "False").lower() in ("true", "1", "yes")
+
+    to_emails = [e.strip() for e in req.destinatarios if e and "@" in e]
+    if not to_emails:
+        return {"success": False, "detail": "No se especificaron destinatarios de correo válidos."}
+
+    if not smtp_server or "YOUR_" in smtp_server or "smtp.office365.com" in smtp_server and not smtp_pass:
+        print(f"[CORREO EN SEGUNDO PLANO - SIMULACIÓN] Destinatarios: {to_emails} | Asunto: {req.asunto}")
+        return {
+            "success": True,
+            "mode": "simulated",
+            "detail": f"Notificación procesada en segundo plano para {len(to_emails)} destinatario(s). (SMTP simulado/sin contraseña en .env)"
+        }
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = req.asunto
+        msg["From"] = smtp_user or "canibalizacion-l504@goodyear.com"
+        msg["To"] = ", ".join(to_emails)
+
+        msg.attach(MIMEText(req.mensaje, "plain", "utf-8"))
+        if req.html_body:
+            msg.attach(MIMEText(req.html_body, "html", "utf-8"))
+
+        if smtp_use_ssl:
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
+        else:
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
+
+        if smtp_use_tls:
+            server.starttls()
+
+        if smtp_pass and smtp_user:
+            server.login(smtp_user, smtp_pass)
+
+        server.sendmail(msg["From"], to_emails, msg.as_string())
+        server.quit()
+
+        return {
+            "success": True,
+            "mode": "smtp",
+            "detail": f"Correo enviado exitosamente en segundo plano a {len(to_emails)} destinatario(s) vía SMTP."
+        }
+    except Exception as e:
+        print(f"Error al enviar correo SMTP: {e}")
+        return {
+            "success": False,
+            "detail": f"Error al conectar con servidor SMTP: {str(e)}"
+        }
 
 # Servir archivos estáticos (index.html, styles.css)
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

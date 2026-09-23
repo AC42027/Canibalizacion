@@ -341,6 +341,7 @@
             text-transform: uppercase;
             min-width: 140px;
         }
+
         .badge-danger-rounded::before {
             content: "";
             width: 8px;
@@ -366,6 +367,7 @@
             text-transform: uppercase;
             min-width: 140px;
         }
+
         .badge-info-rounded::before {
             content: "";
             width: 8px;
@@ -448,6 +450,27 @@
             box-shadow: inset 4px 0 0 var(--accent-yellow);
         }
     </style>
+    <script>
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                const currentDisplay = window.getComputedStyle(modal).display;
+                if (currentDisplay === 'none') {
+                    modal.style.display = 'flex';
+                    const err = document.getElementById('loginError');
+                    if (err) err.style.display = 'none';
+                } else {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+        window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+    </script>
 </head>
 
 <body>
@@ -463,6 +486,9 @@
             <a href="dashboard.html" class="nav-item">
                 <span>🌳</span> Árbol de Equipos
             </a>
+            <a href="admin.html" class="nav-item" id="navAdminLink" style="display: none; background: rgba(255,221,0,0.1); border: 1px dashed var(--accent-yellow); color: var(--accent-yellow);">
+                <span>⚙️</span> Panel Administración
+            </a>
         </nav>
     </div>
 
@@ -473,7 +499,15 @@
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Seguimiento oficial de
                     activos fuera de stock - Planta L504</p>
             </div>
-            <div style="display: flex; gap: 1rem;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <!-- Indicador de Usuario y Botón Iniciar/Cerrar Sesión -->
+                <div id="sessionIndicator" style="display: flex; align-items: center; gap: 0.75rem; background: white; padding: 0.5rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 0.85rem;">
+                    <span id="sessionUserName" style="font-weight: 700; color: var(--primary);">👤 Invitado / Sin sesión</span>
+                    <button id="btnLoginLogout" onclick="toggleLoginModal()" style="background: var(--primary); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); padding: 5px 12px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">
+                        🔑 Iniciar Sesión
+                    </button>
+                </div>
+
                 <button class="btn-action"
                     style="background: white; color: var(--text); border: 1px solid var(--border);"
                     onclick="location.reload()">🔄 Actualizar</button>
@@ -485,15 +519,18 @@
         <div class="filter-row">
             <div class="filter-row-title">Filtro Registro canibalizaciones</div>
             <div class="filter-row-cards">
-                <div class="stat-card clickable active-filter" id="cardFilterTotal" onclick="toggleStatusFilter('TOTAL')" title="Ver todas las canibalizaciones">
+                <div class="stat-card clickable active-filter" id="cardFilterTotal"
+                    onclick="toggleStatusFilter('TOTAL')" title="Ver todas las canibalizaciones">
                     <div class="stat-label">Total Canibalizaciones</div>
                     <div class="stat-value" id="totalCount">-</div>
                 </div>
-                <div class="stat-card clickable" id="cardFilterPending" onclick="toggleStatusFilter('PENDING')" title="Filtrar por Pendientes de Normalizar">
+                <div class="stat-card clickable" id="cardFilterPending" onclick="toggleStatusFilter('PENDING')"
+                    title="Filtrar por Pendientes de Normalizar">
                     <div class="stat-label">Pendientes de Normalizar</div>
                     <div class="stat-value" id="pendingCount" style="color: var(--warning);">-</div>
                 </div>
-                <div class="stat-card clickable" id="cardFilterNormalized" onclick="toggleStatusFilter('NORMALIZED')" title="Filtrar por Normalizados">
+                <div class="stat-card clickable" id="cardFilterNormalized" onclick="toggleStatusFilter('NORMALIZED')"
+                    title="Filtrar por Normalizados">
                     <div class="stat-label">Normalizados</div>
                     <div class="stat-value" id="normalizedCount" style="color: var(--success);">-</div>
                 </div>
@@ -508,25 +545,33 @@
         <div class="filter-row">
             <div class="filter-row-title">Filtro por división</div>
             <div class="filter-row-cards">
-                <div class="stat-card clickable" id="cardFilterDivA" onclick="toggleDivisionFilter('DIVISION A')" title="Filtrar por División A">
+                <div class="stat-card clickable" id="cardFilterDivA" onclick="toggleDivisionFilter('DIVISION A')"
+                    title="Filtrar por División A">
                     <div class="stat-label" style="color: var(--primary);">División A</div>
                     <div class="stat-value" id="divACount">-</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divADetails">0 normalizados</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divADetails">0
+                        normalizados</div>
                 </div>
-                <div class="stat-card clickable" id="cardFilterDivB" onclick="toggleDivisionFilter('DIVISION B')" title="Filtrar por División B">
+                <div class="stat-card clickable" id="cardFilterDivB" onclick="toggleDivisionFilter('DIVISION B')"
+                    title="Filtrar por División B">
                     <div class="stat-label" style="color: var(--primary);">División B</div>
                     <div class="stat-value" id="divBCount">-</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divBDetails">0 normalizados</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="divBDetails">0
+                        normalizados</div>
                 </div>
-                <div class="stat-card clickable" id="cardFilterFacilities" onclick="toggleDivisionFilter('FACILITIES')" title="Filtrar por Facilities">
+                <div class="stat-card clickable" id="cardFilterFacilities" onclick="toggleDivisionFilter('FACILITIES')"
+                    title="Filtrar por Facilities">
                     <div class="stat-label" style="color: var(--primary);">Facilities</div>
                     <div class="stat-value" id="facilitiesCount">-</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="facilitiesDetails">0 normalizados</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;"
+                        id="facilitiesDetails">0 normalizados</div>
                 </div>
-                <div class="stat-card clickable" id="cardFilterUtilities" onclick="toggleDivisionFilter('UTILITIES')" title="Filtrar por Utilities">
+                <div class="stat-card clickable" id="cardFilterUtilities" onclick="toggleDivisionFilter('UTILITIES')"
+                    title="Filtrar por Utilities">
                     <div class="stat-label" style="color: var(--primary);">Utilities</div>
                     <div class="stat-value" id="utilitiesCount">-</div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="utilitiesDetails">0 normalizados</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;" id="utilitiesDetails">
+                        0 normalizados</div>
                 </div>
             </div>
         </div>
@@ -558,7 +603,7 @@
                             <th style="width: 8%;">OT</th>
                             <th style="width: 18%;">Máquinas (Origen ➔ Destino)</th>
                             <th style="width: 15%;">Código Repuesto</th>
-                            <th style="width: 22%;">Nombre del Repuesto (Info. Corta)</th>
+                            <th style="width: 22%;">Nombre del Repuesto (Info. Breve)</th>
                             <th style="width: 18%;">Técnico - ING. MTTO/PL</th>
                             <th style="width: 11%; text-align: center;">Estado</th>
                         </tr>
@@ -591,25 +636,38 @@
         async function cargarDatos() {
             try {
                 const response = await fetch('/api/registros');
-                const data = await response.json();
-                todosLosRegistros = data.canibalizaciones || [];
+                if (response.ok) {
+                    const data = await response.json();
+                    todosLosRegistros = data.canibalizaciones || [];
+                } else {
+                    throw new Error('Respuesta no OK de /api/registros');
+                }
+            } catch (error) {
+                console.warn("No se pudo cargar desde /api/registros, usando data.json de respaldo:", error);
+                try {
+                    const fallbackRes = await fetch('data.json');
+                    const fallbackData = await fallbackRes.json();
+                    todosLosRegistros = fallbackData.canibalizaciones || [];
+                } catch (e2) {
+                    console.error("Error al cargar data.json:", e2);
+                }
+            }
 
-                // Actualizar KPIs iniciales
-                actualizarKPIs(todosLosRegistros);
-                renderTable(todosLosRegistros);
+            // Actualizar KPIs iniciales y renderizar tabla
+            actualizarKPIs(todosLosRegistros);
+            renderTable(todosLosRegistros);
 
-                // Mostrar usuario activo desde sessionStorage o default
-                const activeUser = sessionStorage.getItem('session_usuario') || 'ac42027';
-                const activeUserEl = document.getElementById('activeUserVal');
-                if (activeUserEl) activeUserEl.innerText = activeUser;
+            // Mostrar usuario activo desde sessionStorage o default
+            const activeUser = sessionStorage.getItem('session_usuario') || 'ac42027';
+            const activeUserEl = document.getElementById('activeUserVal');
+            if (activeUserEl) activeUserEl.innerText = activeUser;
 
-                // Listeners para Filtros
-                document.getElementById('mainSearch').addEventListener('keypress', (e) => {
+            // Listeners para Filtros
+            const mainSearchEl = document.getElementById('mainSearch');
+            if (mainSearchEl) {
+                mainSearchEl.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') filtrarData();
                 });
-
-            } catch (error) {
-                console.error("Error cargando dashboard:", error);
             }
         }
 
@@ -671,7 +729,7 @@
         }
 
         function filtrarData() {
-            const term = document.getElementById('mainSearch').value.toLowerCase();
+            const term = (document.getElementById('mainSearch').value || '').toLowerCase();
             const statsDiv = document.getElementById('filterStats');
 
             const filtrados = todosLosRegistros.filter(r => {
@@ -697,9 +755,10 @@
                 return (
                     (r.maquina_donante || "").toLowerCase().includes(term) ||
                     (r.maquina_receptora || "").toLowerCase().includes(term) ||
-                    r.retirado_por.toLowerCase().includes(term) ||
-                    r.responsable_reposicion.toLowerCase().includes(term) ||
-                    r.repuesto_descripcion.toLowerCase().includes(term) ||
+                    (r.retirado_por || "").toLowerCase().includes(term) ||
+                    (r.responsable_reposicion || "").toLowerCase().includes(term) ||
+                    (r.repuesto_descripcion || "").toLowerCase().includes(term) ||
+                    (r.repuesto_nombre || "").toLowerCase().includes(term) ||
                     (r.repuesto_codigo || "").toLowerCase().includes(term) ||
                     (r.usuario_registro || "").toLowerCase().includes(term)
                 );
@@ -710,8 +769,8 @@
                 let activeFilters = [];
                 if (activeDivisionFilter) {
                     const readableName = activeDivisionFilter === 'DIVISION A' ? 'División A' :
-                                         activeDivisionFilter === 'DIVISION B' ? 'División B' :
-                                         activeDivisionFilter.charAt(0) + activeDivisionFilter.slice(1).toLowerCase();
+                        activeDivisionFilter === 'DIVISION B' ? 'División B' :
+                            activeDivisionFilter.charAt(0) + activeDivisionFilter.slice(1).toLowerCase();
                     activeFilters.push(`Zona: ${readableName}`);
                 }
                 if (activeStatusFilter) {
@@ -772,21 +831,24 @@
 
         function renderTable(data) {
             const body = document.getElementById('historyBody');
-            if (data.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 4rem; color: var(--text-muted);">No se encontraron registros que coincidan con los filtros.</td></tr>';
+            if (!data || data.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 4rem; color: var(--text-muted);">No se encontraron registros que coincidan con los filtros.</td></tr>';
                 return;
             }
 
             const formatMaquinaCol = (path) => {
                 if (!path) return { maquina: 'N/A', division: 'N/A', area: 'N/A' };
-                const parts = path.split(' > ');
+                const parts = String(path).split(' > ');
                 const maquina = parts.pop() || 'N/A';
                 const division = parts[0] || 'N/A';
-                const area = parts[1] || 'N/A';
+                const area = parts.slice(1).join(' > ') || 'N/A';
                 return { maquina, division, area };
             };
 
             body.innerHTML = data.slice().reverse().map(r => {
+                const idStr = r.id ? String(r.id) : '000000';
+                const displayId = idStr.length >= 6 ? idStr.substring(idStr.length - 6) : idStr;
+
                 const tieneCodigo = r.repuesto_codigo && r.repuesto_codigo !== "SIN CÓDIGO" && r.repuesto_codigo.trim() !== "";
                 const tieneUbicacion = r.codigo_bodega && !["N/A", "POR ASIGNAR", "SIN UBICACIÓN DESIGNADA", "-"].includes(r.codigo_bodega);
 
@@ -795,22 +857,20 @@
                 let ubicacionTexto = tieneUbicacion ? r.codigo_bodega : 'POR ASIGNAR';
 
                 // Lógica de Normalización
-                const isNormalized = r.normalizado === true;
+                const isNormalized = r.normalizado === true || r.normalizado === 1;
                 const statusBadge = isNormalized
                     ? `<div class="status-normalized">🟢 Normalizado</div>`
                     : `<div class="status-pending">🟡 Pendiente</div>`;
 
-                const toggleText = isNormalized ? "Revertir a Pendiente" : "Marcar Normalizado";
-
-                const donanteInfo = r.maquina_donante ? formatMaquinaCol(r.maquina_donante) : null;
-                const receptoraInfo = r.maquina_receptora ? formatMaquinaCol(r.maquina_receptora) : null;
+                const donanteInfo = r.maquina_donante ? formatMaquinaCol(r.maquina_donante) : { maquina: 'N/A', division: 'N/A', area: 'N/A' };
+                const receptoraInfo = r.maquina_receptora ? formatMaquinaCol(r.maquina_receptora) : { maquina: 'N/A', division: 'N/A', area: 'N/A' };
                 const unicaInfo = r.maquina ? formatMaquinaCol(r.maquina) : null;
 
                 return `
-                    <tr id="row-${r.id}" onclick="window.location.href='detail.html?id=${r.id}'" style="cursor: pointer;" class="history-row">
+                    <tr id="row-${idStr}" onclick="window.location.href='detail.html?id=${idStr}'" style="cursor: pointer;" class="history-row">
                         <td>
-                            <div style="font-weight: 600;">${r.fecha}</div>
-                            <div style="font-size: 0.7rem; color: var(--text-muted);">#${r.id.substring(r.id.length - 6)}</div>
+                            <div style="font-weight: 600;">${r.fecha || 'S/F'}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">#${displayId}</div>
                         </td>
                         <td>
                             <div style="font-size: 0.9rem; color: var(--primary); font-weight: 800;">
@@ -847,29 +907,29 @@
                             </div>
                         </td>
                         <td style="vertical-align: middle;">
-                            ${(r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo) 
-                                ? `<div class="badge-danger-rounded">SIN CÓDIGO SAP</div>` 
-                                : `<div class="badge-info-rounded" style="color: #0369a1;">${r.repuesto_codigo}</div>`
-                            }
+                            ${(r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo)
+                        ? `<div class="badge-danger-rounded">SIN CÓDIGO SAP</div>`
+                        : `<div class="badge-info-rounded" style="color: #0369a1;">${r.repuesto_codigo}</div>`
+                    }
                         </td>
                         <td>
                             <div style="font-weight: 700; color: var(--primary); font-size: 0.85rem;">
-                                ${r.repuesto_nombre || (r.repuesto_descripcion ? r.repuesto_descripcion.split(' ').slice(0,4).join(' ') : 'N/A')}
+                                ${r.repuesto_nombre || (r.repuesto_descripcion ? r.repuesto_descripcion.split(' ').slice(0, 4).join(' ') : 'N/A')}
                             </div>
                         </td>
                         <td>
                             <div style="margin-bottom: 0.5rem;">
-                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${r.retirado_por}</div>
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">${r.retirado_por || 'N/A'}</div>
                                 <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${r.cargo_tecnico || 'Técnico'}</div>
                             </div>
                             <div>
-                                <div style="font-size: 0.85rem; font-weight: 700; color: #475569;">${r.responsable_reposicion}</div>
+                                <div style="font-size: 0.85rem; font-weight: 700; color: #475569;">${r.responsable_reposicion || 'N/A'}</div>
                                 <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">${r.cargo_responsable || 'Ing. Mtto / PL'}</div>
                             </div>
                         </td>
                         <td style="text-align: center;">
                             ${statusBadge}
-                            <button onclick="eliminarRegistro(event, '${r.id}')" style="margin-top: 8px; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'" title="Eliminar registro (Modo Prueba)">🗑️ Eliminar</button>
+                            <button onclick="eliminarRegistro(event, '${idStr}')" style="margin-top: 8px; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'" title="Eliminar registro (Modo Prueba)">🗑️ Eliminar</button>
                         </td>
                     </tr>
                 `;
@@ -886,7 +946,7 @@
         async function toggleStatus(id) {
             try {
                 const token = sessionStorage.getItem('session_token') || '';
-                const response = await fetch(`/api/normalizar/${id}`, { 
+                const response = await fetch(`/api/normalizar/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: token })
@@ -921,7 +981,217 @@
                 }
             }
         }
+    </script>
 
+    <!-- Modal de Login -->
+    <div id="modalLogin" class="modal" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; width: 90%; max-width: 440px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid var(--border);">
+            <div style="padding: 1.25rem 1.5rem; background: var(--primary); color: white; border-bottom: 3px solid var(--accent-yellow); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0; font-size: 1.15rem; color: var(--accent-yellow); font-weight: 800; font-family: 'Outfit', sans-serif;">Iniciar Sesión</h2>
+                <button type="button" onclick="cerrarModal('modalLogin')" style="background: none; border: none; font-size: 1.75rem; cursor: pointer; color: var(--accent-yellow); line-height: 1;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Ingrese con sus credenciales de <strong>Planificador</strong>, <strong>Ingeniero de Confiabilidad</strong> o <strong>Administrador</strong>.
+                </p>
+                <form id="formLogin" onsubmit="procesarLogin(event)">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.3rem;">Usuario</label>
+                        <input type="text" id="loginUsuario" required placeholder="Ej: planificador, confiabilidad, admin..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.3rem;">Contraseña</label>
+                        <input type="password" id="loginContrasena" required placeholder="••••••••" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <button type="submit" style="width: 100%; padding: 0.75rem; background: var(--primary); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); border-radius: 0.5rem; font-weight: 800; cursor: pointer; font-size: 0.95rem; text-transform: uppercase;">Iniciar Sesión</button>
+                    <div id="loginError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
+                </form>
+
+                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border); font-size: 0.75rem; color: var(--text-muted);">
+                    <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>planificador</b> <small style="color:#64748b;">(Planificador)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('confiabilidad', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>confiabilidad</b> <small style="color:#64748b;">(Ing. Confiabilidad)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('admin', 'admin123')" style="text-align: left; padding: 6px 10px; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👑 <b>admin</b> <small style="color:#854d0e;">(Administrador)</small></span>
+                            <span style="color:#854d0e; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('ac42028', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🔧 <b>ac42028</b> <small style="color:#1d4ed8;">(Técnico / Pruebas)</small></span>
+                            <span style="color:#1e40af; font-weight:700;">Ingresar →</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function actualizarIndicadorSesion() {
+            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const usuario = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
+            const nombre = sessionStorage.getItem('session_nombre') || localStorage.getItem('session_nombre');
+            const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
+
+            const nameSpan = document.getElementById('sessionUserName');
+            const btnLoginLogout = document.getElementById('btnLoginLogout');
+            const activeUserVal = document.getElementById('activeUserVal');
+            const navAdminLink = document.getElementById('navAdminLink');
+
+            if (token && usuario) {
+                if (nameSpan) nameSpan.innerHTML = `👤 <b>${nombre || usuario}</b> <small style="opacity:0.8;">(${rol || 'Usuario'})</small>`;
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🚪 Cerrar Sesión';
+                    btnLoginLogout.onclick = cerrarSesion;
+                    btnLoginLogout.style.background = '#fee2e2';
+                    btnLoginLogout.style.color = '#991b1b';
+                    btnLoginLogout.style.border = '1px solid #f87171';
+                }
+                if (activeUserVal) activeUserVal.innerText = `${usuario} (${rol})`;
+                if (navAdminLink) navAdminLink.style.display = (rol === 'admin') ? 'flex' : 'none';
+            } else {
+                if (nameSpan) nameSpan.innerText = '👤 Invitado / Sin sesión';
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🔑 Iniciar Sesión';
+                    btnLoginLogout.onclick = toggleLoginModal;
+                    btnLoginLogout.style.background = 'var(--primary)';
+                    btnLoginLogout.style.color = 'var(--accent-yellow)';
+                    btnLoginLogout.style.border = '1px solid var(--accent-yellow)';
+                }
+                if (activeUserVal) activeUserVal.innerText = sessionStorage.getItem('session_usuario') || 'ac42027';
+                if (navAdminLink) navAdminLink.style.display = 'none';
+            }
+        }
+
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                modal.style.display = 'flex';
+                const err = document.getElementById('loginError');
+                if (err) err.style.display = 'none';
+            }
+        }
+
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function quickLogin(user, pass) {
+            document.getElementById('loginUsuario').value = user;
+            document.getElementById('loginContrasena').value = pass;
+            await procesarLogin(new Event('submit'));
+        }
+
+        async function procesarLogin(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const contrasena = document.getElementById('loginContrasena').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contrasena })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    sessionStorage.setItem('session_token', data.token);
+                    sessionStorage.setItem('session_usuario', data.usuario);
+                    sessionStorage.setItem('session_rol', data.rol);
+                    sessionStorage.setItem('session_nombre', data.nombre);
+
+                    localStorage.setItem('session_token', data.token);
+                    localStorage.setItem('session_usuario', data.usuario);
+                    localStorage.setItem('session_rol', data.rol);
+                    localStorage.setItem('session_nombre', data.nombre);
+
+                    cerrarModal('modalLogin');
+                    actualizarIndicadorSesion();
+
+                    if (data.rol === 'admin') {
+                        alert(`¡Bienvenido ${data.nombre}! Tienes acceso activado al Panel de Administración.`);
+                    }
+                    return;
+                } else {
+                    if (errorDiv) {
+                        errorDiv.innerText = data.detail || 'Usuario o contraseña incorrectos';
+                        errorDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.warn("Fallo backend /api/login, usando fallback local:", err);
+            }
+
+            // Fallback Local de Prueba
+            const MOCK_USERS = {
+                'planificador': { rol: 'planificador', nombre: 'Planificador L504', pass: 'goodyear123' },
+                'confiabilidad': { rol: 'ingeniero_confiabilidad', nombre: 'Ing. Confiabilidad L504', pass: 'goodyear123' },
+                'admin': { rol: 'admin', nombre: 'Administrador de Ingeniería', pass: 'admin123' },
+                'ac42028': { rol: 'admin', nombre: 'Usuario AC42028 (Pruebas)', pass: 'goodyear123' }
+            };
+
+            const userKey = usuario.toLowerCase();
+            if (MOCK_USERS[userKey] && (MOCK_USERS[userKey].pass === contrasena || contrasena === 'goodyear123' || contrasena === 'admin123')) {
+                const mock = MOCK_USERS[userKey];
+                sessionStorage.setItem('session_token', 'local-token-' + Date.now());
+                sessionStorage.setItem('session_usuario', userKey);
+                sessionStorage.setItem('session_rol', mock.rol);
+                sessionStorage.setItem('session_nombre', mock.nombre);
+
+                localStorage.setItem('session_token', 'local-token-' + Date.now());
+                localStorage.setItem('session_usuario', userKey);
+                localStorage.setItem('session_rol', mock.rol);
+                localStorage.setItem('session_nombre', mock.nombre);
+
+                cerrarModal('modalLogin');
+                actualizarIndicadorSesion();
+
+                if (mock.rol === 'admin') {
+                    alert(`¡Bienvenido ${mock.nombre}! Tienes acceso activado al Panel de Administración.`);
+                }
+            } else {
+                if (errorDiv) {
+                    errorDiv.innerText = 'Usuario o contraseña incorrectos';
+                    errorDiv.style.display = 'block';
+                }
+            }
+        }
+
+        async function cerrarSesion() {
+            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            if (token) {
+                try {
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            sessionStorage.clear();
+            localStorage.clear();
+            actualizarIndicadorSesion();
+        }
+
+        // Inicializar indicador de sesión
+                window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+        window.cerrarSesion = cerrarSesion;
+        window.quickLogin = quickLogin;
+        window.procesarLogin = procesarLogin;
+        actualizarIndicadorSesion();
         cargarDatos();
     </script>
 </body>

@@ -6,6 +6,27 @@
     <title>Canibalización de Repuestos | Registro Oficial</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
+    <script>
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                const currentDisplay = window.getComputedStyle(modal).display;
+                if (currentDisplay === 'none') {
+                    modal.style.display = 'flex';
+                    const err = document.getElementById('loginError');
+                    if (err) err.style.display = 'none';
+                } else {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+        window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+    </script>
 </head>
 
 <body>
@@ -19,7 +40,16 @@
                     <p class="subtitle">Formato oficial basado en PMAN-7503</p>
                 </div>
             </div>
-            <a href="history.html" class="btn-dashboard">Ir al Dashboard Completo ↗</a>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <div id="sessionIndicator" style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; padding: 0.4rem 0.8rem; border-radius: 0.5rem; border: 1px solid var(--border-color); font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+                    <span id="sessionUserName" style="font-weight: 700; color: var(--primary-color);">👤 Invitado / Sin sesión</span>
+                    <button id="btnLoginLogout" type="button" onclick="toggleLoginModal()" style="background: var(--primary-color); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">
+                        🔑 Iniciar Sesión
+                    </button>
+                </div>
+                <a href="admin.html" id="navAdminLink" class="btn-dashboard" style="display: none; background: #fef9c3; color: #854d0e; border: 1px solid #facc15;">⚙️ Panel Admin</a>
+                <a href="history.html" class="btn-dashboard">📊 Dashboard Completo ↗</a>
+            </div>
         </header>
 
         <form id="canibalizacionForm">
@@ -106,7 +136,7 @@
                             style="background-color: #f8fafc; cursor: not-allowed; font-weight: 700;">
                     </div>
                     <div class="form-group">
-                        <label>Nombre del Repuesto (Info. Corta)</label>
+                        <label>Nombre del Repuesto (Info. Breve)</label>
                         <input type="text" name="repuesto_nombre" id="repuesto_nombre" required
                             placeholder="Ej: Rodamiento Pulldrive, Drive eje X..."
                             style="border: 2px solid var(--primary-color); font-weight: 700;">
@@ -159,7 +189,8 @@
                     </div>
                     <div class="form-group">
                         <label>Responsable por Reponer (PL\ING. MTTO)</label>
-                        <select name="responsable_reposicion" id="responsable_reposicion" required style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid var(--primary-color); font-weight: 700; background-color: #ffffff;">
+                        <select name="responsable_reposicion" id="responsable_reposicion" required
+                            style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; border: 2px solid var(--primary-color); font-weight: 700; background-color: #ffffff;">
                             <option value="">Seleccione máquinas para ver encargados...</option>
                         </select>
                         <div id="email_responsable_container"
@@ -191,20 +222,88 @@
                 </div>
 
                 <!-- Container de Encargados de Área (Estructura Interna) -->
-                <div id="containerEncargadosArea" style="display: none; margin-top: 1.5rem; padding: 1.25rem; background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bae6fd; padding-bottom: 0.6rem; margin-bottom: 0.75rem;">
-                        <h4 style="margin: 0; color: #0369a1; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                <div id="containerEncargadosArea"
+                    style="display: none; margin-top: 1.5rem; padding: 1.25rem; background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bae6fd; padding-bottom: 0.6rem; margin-bottom: 0.75rem;">
+                        <h4
+                            style="margin: 0; color: #0369a1; font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
                             <span>👥</span> Encargados de Área Detectados (Estructura Interna)
                         </h4>
-                        <a id="btnEnviarCorreoNotificacion" href="#" target="_blank" class="btn-dashboard" style="background: #0284c7; color: white; padding: 6px 14px; font-size: 0.8rem; border-radius: 0.375rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            ✉️ Redactar Correo
+                        <a id="btnEnviarCorreoNotificacion" href="#" target="_blank" class="btn-dashboard"
+                            style="background: #0284c7; color: white; padding: 6px 14px; font-size: 0.8rem; border-radius: 0.375rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            ✉️ Vista Previa Correo
                         </a>
                     </div>
                     <div id="gridEncargadosArea">
                         <!-- Se llenará dinámicamente -->
                     </div>
-                    <div style="margin-top: 0.85rem; border-top: 1px dashed #bae6fd; padding-top: 0.5rem; font-size: 0.75rem; color: #0369a1;">
-                        <strong>Correos a Notificar:</strong> <span id="listaCorreosNotificacion" style="font-family: monospace; word-break: break-all;">-</span>
+
+                    <!-- Gestión de Correos Destinatarios con Chips interactivos y botón X -->
+                    <div
+                        style="margin-top: 1rem; border-top: 1px dashed #bae6fd; padding-top: 0.75rem; font-size: 0.75rem; color: #0369a1;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <strong>📧 Correos a Notificar (Haz clic en ❌ para eliminar individualmente):</strong>
+                            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+                                <button type="button" onclick="quitarCorreosRealesTest()"
+                                    style="background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;"
+                                    title="Retirar todos los correos reales de la estructura para pruebas">
+                                    🚫 Retirar correos reales
+                                </button>
+                                <button type="button" onclick="agregarCorreoTestRapido()"
+                                    style="background: #e0f2fe; color: #0369a1; border: 1px solid #0284c7; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;"
+                                    title="Establecer únicamente cristian_curin@goodyear.com">
+                                    🧪 Usar solo mi correo de prueba
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chips dinámicos interactivos -->
+                        <div id="chipsCorreosForm" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; min-height: 32px; align-items: center;">
+                            <!-- Renderizado dinámicamente -->
+                        </div>
+
+                        <!-- Input para agregar correo personalizado -->
+                        <div style="display: flex; gap: 0.4rem; max-width: 460px;">
+                            <input type="email" id="inputNuevoCorreoForm" placeholder="Agregar otro correo destinatario (ej: correo@goodyear.com)..." style="flex: 1; padding: 5px 10px; border: 1px solid #bae6fd; border-radius: 4px; font-size: 0.78rem; outline: none;">
+                            <button type="button" onclick="agregarCorreoCustomForm()" style="background: #0284c7; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                                ➕ Agregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Redacción Integrada del Correo -->
+                    <div style="margin-top: 1rem; background: #ffffff; border: 1px solid #bae6fd; border-radius: 0.5rem; padding: 0.85rem;">
+                        <div style="font-weight: 800; color: #0369a1; font-size: 0.82rem; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>✍️</span> Redactar / Personalizar Mensaje de Notificación
+                        </div>
+
+                        <div style="margin-bottom: 0.6rem;">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; color: #0369a1; text-transform: uppercase; margin-bottom: 2px;">Asunto del Correo:</label>
+                            <input type="text" id="asuntoCorreoForm" placeholder="Asunto del correo..." style="width: 100%; padding: 6px 10px; border: 1px solid #bae6fd; border-radius: 4px; font-size: 0.8rem; font-weight: 600; color: #1e293b; outline: none;">
+                        </div>
+
+                        <div style="margin-bottom: 0.6rem;">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; color: #0369a1; text-transform: uppercase; margin-bottom: 2px;">Mensaje / Nota Adicional para el Correo:</label>
+                            <textarea id="notaCorreoForm" rows="2" placeholder="Nota o instrucción adicional que se incluirá en el cuerpo del correo..." style="width: 100%; padding: 6px 10px; border: 1px solid #bae6fd; border-radius: 4px; font-size: 0.8rem; outline: none; font-family: inherit; resize: vertical;"></textarea>
+                        </div>
+
+                        <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.78rem; color: #0369a1; font-weight: 700; background: #e0f2fe; padding: 10px 12px; border-radius: 6px; border: 1px solid #7dd3fc;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="checkEnviarAutoForm" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="checkEnviarAutoForm" style="cursor: pointer;">
+                                    🚀 Enviar correo automáticamente al presionar "Guardar Registro Oficial"
+                                </label>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1.2rem; margin-top: 4px; padding-left: 1.5rem; font-weight: 600;">
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.35rem; color: #0284c7;">
+                                    <input type="radio" name="modoEnvioCorreo" value="backend" checked style="cursor: pointer;"> ⚡ Directo desde Servidor SMTP (Sin abrir Outlook)
+                                </label>
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 0.35rem; color: #475569;">
+                                    <input type="radio" name="modoEnvioCorreo" value="outlook" style="cursor: pointer;"> ✉️ Abrir ventana en Outlook
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </fieldset>
@@ -226,6 +325,141 @@
 
     </div>
 
+    <!-- Modal Pop-Up de Confirmación con fondo borroso -->
+    <div id="modalConfirmacionExito" class="modal"
+        style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); align-items: center; justify-content: center;">
+        <div class="modal-content"
+            style="max-width: 650px; width: 92%; border-radius: 1.25rem; background: #fff; overflow: hidden; border: 2px solid var(--accent-yellow); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); animation: popInModal 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <!-- Header -->
+            <div
+                style="background: var(--primary-color); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--accent-yellow);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.75rem;">✅</span>
+                    <div>
+                        <h3
+                            style="margin: 0; color: var(--accent-yellow); font-size: 1.2rem; font-weight: 800; text-transform: uppercase; font-family: 'Outfit', sans-serif;">
+                            ¡Registro Exitoso!</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: #cbd5e1;">Canibalización registrada oficialmente
+                            en el sistema</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="cerrarModalConfirmacion()"
+                    style="color: var(--accent-yellow); font-size: 2rem; border: none; background: none; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Brief Summary Box -->
+                <div
+                    style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.25rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: var(--primary-color);">REGISTRO ID:
+                            <span id="confRecordId" style="color: #0369a1;">#</span></span>
+                        <span id="confFecha"
+                            style="font-size: 0.75rem; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-weight: 700;">-</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.85rem;">
+                        <div><span style="color: var(--text-muted); font-size:0.75rem; display:block;">ORDEN DE
+                                TRABAJO</span> <strong id="confOT" style="color: var(--primary-color);">-</strong></div>
+                        <div><span style="color: var(--text-muted); font-size:0.75rem; display:block;">REPUESTO</span>
+                            <strong id="confRepuesto" style="color: var(--primary-color);">-</strong></div>
+                        <div
+                            style="grid-column: span 2; background: white; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+                            <span
+                                style="color: var(--text-muted); font-size:0.75rem; display:block; margin-bottom: 2px;">FLUJO
+                                DE EQUIPOS</span>
+                            <span id="confOrigen" style="color:#991b1b; font-weight:700;">-</span>
+                            <span style="color: var(--primary-color); font-weight:800; margin: 0 4px;">➔</span>
+                            <span id="confDestino" style="color:#166534; font-weight:700;">-</span>
+                        </div>
+                        <div><span style="color: var(--text-muted); font-size:0.75rem; display:block;">RETIRADO
+                                POR</span> <strong id="confTecnico">-</strong></div>
+                        <div><span style="color: var(--text-muted); font-size:0.75rem; display:block;">RESPONSABLE
+                                REPOSICIÓN</span> <strong id="confResponsable">-</strong></div>
+                    </div>
+                </div>
+
+                <!-- Recipient Emails & Custom Test Emails Section -->
+                <div
+                    style="background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 0.75rem; padding: 1.25rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h4
+                            style="margin: 0; color: #0369a1; font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>✉️</span> Destinatarios a Notificar
+                        </h4>
+                        <span
+                            style="font-size: 0.7rem; background: #0284c7; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 700; text-transform: uppercase;">Modo
+                            Pruebas</span>
+                    </div>
+                    <p style="font-size: 0.78rem; color: #0369a1; margin-bottom: 0.5rem;">
+                        Puedes retirar los correos reales de la estructura o usar tu correo de prueba:
+                    </p>
+
+                    <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                        <button type="button" onclick="quitarTodosCorreosModal()"
+                            style="background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                            🚫 Retirar correos reales
+                        </button>
+                        <button type="button" onclick="usarSoloMiCorreoModal()"
+                            style="background: #e0f2fe; color: #0369a1; border: 1px solid #0284c7; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+                            🧪 Usar solo cristian_curin@goodyear.com
+                        </button>
+                    </div>
+
+                    <!-- Email List Chips -->
+                    <div id="confCorreosChips"
+                        style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; min-height: 32px; align-items: center;">
+                        <!-- Chips dinámicos -->
+                    </div>
+
+                    <!-- Input to add custom email -->
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="email" id="inputCustomEmail"
+                            placeholder="Agregar correo de prueba (ej: cristian_curin@goodyear.com)..."
+                            style="flex: 1; padding: 0.55rem 0.75rem; font-size: 0.85rem; border: 1px solid #bae6fd; border-radius: 0.5rem; outline: none;">
+                        <button type="button" onclick="agregarCorreoPruebaModal()"
+                            style="background: #0284c7; color: white; border: none; padding: 0.55rem 1rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                            + Agregar Correo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div
+                style="background: #f8fafc; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; align-items: center;">
+                <button type="button" onclick="cerrarModalConfirmacion()"
+                    style="padding: 0.65rem 1.2rem; background: #e2e8f0; color: var(--text-main); border: 1px solid #cbd5e1; border-radius: 0.5rem; font-weight: 700; cursor: pointer; font-size: 0.85rem;">
+                    ➕ Crear Otro Registro
+                </button>
+                <a id="btnVerDetalleConfirmacion" href="#" class="btn-dashboard"
+                    style="padding: 0.65rem 1.2rem; font-size: 0.85rem; border-radius: 0.5rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: #334155; color: white; border: 1px solid #475569;">
+                    📜 Ver Detalle Completo
+                </a>
+                <a id="btnRedactarCorreoConfirmacion" href="#" target="_blank" class="btn-dashboard"
+                    style="padding: 0.65rem 1.2rem; font-size: 0.85rem; border-radius: 0.5rem; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; background: #0284c7; color: white; border: 1px solid var(--accent-yellow); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                    ✉️ Redactar / Enviar Correo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes popInModal {
+            0% {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+
     <!-- Modal para el Árbol de Equipos -->
     <div id="modalArbol" class="modal">
         <div class="modal-content">
@@ -233,12 +467,16 @@
                 <h2 id="modalArbolTitulo" style="margin:0; font-size:1.25rem;">Explorador Visual de Equipos</h2>
                 <button type="button" id="btnCerrarArbol" class="btn-close">&times;</button>
             </div>
-            <div class="modal-search" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: #f8fafc;">
+            <div class="modal-search"
+                style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); background: #f8fafc;">
                 <div style="position: relative; width: 100%;">
-                    <input type="text" id="inputBuscarArbol" placeholder="🔍 Buscar equipo por nombre, tag o ubicación..." 
-                        style="width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); font-size: 0.9rem;" autocomplete="off">
-                    <div id="resultadosBusquedaArbol" class="autocomplete-results" 
-                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 0.5rem; z-index: 2100; box-shadow: var(--shadow-lg);"></div>
+                    <input type="text" id="inputBuscarArbol"
+                        placeholder="🔍 Buscar equipo por nombre, tag o ubicación..."
+                        style="width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); font-size: 0.9rem;"
+                        autocomplete="off">
+                    <div id="resultadosBusquedaArbol" class="autocomplete-results"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 0.5rem; z-index: 2100; box-shadow: var(--shadow-lg);">
+                    </div>
                 </div>
             </div>
             <div class="modal-body">
@@ -757,7 +995,7 @@
             codInput.value = "";
             descInput.value = "";
             document.getElementById('repuesto_nombre').value = "";
-            
+
             // Configurar ubicación de bodega por defecto en modo manual
             if (bodegaInput) {
                 bodegaInput.value = "SIN UBICACIÓN DESIGNADA";
@@ -767,7 +1005,7 @@
                 bodegaInput.style.color = "#991b1b";
                 bodegaInput.style.cursor = "text";
             }
-            
+
             // Habilitar inputs para modo manual
             codInput.readOnly = false;
             codInput.style.backgroundColor = "#ffffff";
@@ -1062,19 +1300,87 @@
                         }
                     }
                 }
-            } catch (err) {
-                console.error("Error buscando correo del jefe:", err);
+            } catch (e) {
+                console.error("Error al buscar correo del jefe:", e);
             }
+            actualizarEnlaceCorreoNotificacion();
         }
 
         let ultimosEncargadosArea = null;
+        let correosNotificacionForm = [];
+        let encargadosManualModificados = false;
+
+        function renderCardHtml(c) {
+            const email = (c.correo || '').trim();
+            const hasEmail = email !== '';
+            const isIncluded = hasEmail && correosNotificacionForm.includes(email);
+            return `
+                <div style="background: white; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #bae6fd; box-shadow: 0 1px 2px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="font-weight: 800; color: #0284c7; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">
+                            ${c.cargo === 'ETL' ? '👔 ETL' : c.cargo === 'Planner' ? '📋 Planner' : c.cargo.includes('Ingeniero') ? '🛠️ Ing. Mantenimiento' : '👤 ' + c.cargo}
+                        </div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 0.85rem;">${c.nombre}</div>
+                        <div style="font-size: 0.7rem; color: #0284c7; font-weight: 600; word-break: break-all; overflow-wrap: anywhere;">📧 ${email || 'Sin correo'}</div>
+                        <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">📍 ${c.division || ''} - ${c.area || c.departamento || ''}</div>
+                    </div>
+                    ${hasEmail ? `
+                        <div style="margin-top: 0.5rem; border-top: 1px solid #f1f5f9; padding-top: 0.35rem; display: flex; justify-content: flex-end;">
+                            <button type="button" onclick="toggleContactoCard('${email}')" style="background: ${isIncluded ? '#fee2e2' : '#e0f2fe'}; color: ${isIncluded ? '#991b1b' : '#0369a1'}; border: 1px solid ${isIncluded ? '#f87171' : '#7dd3fc'}; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                                ${isIncluded ? '❌ Quitar' : '➕ Incluir'}
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderGridEncargados(data) {
+            const grid = document.getElementById('gridEncargadosArea');
+            if (!grid || !data) return;
+
+            const pathDonante = document.getElementById('valDonante')?.value || '';
+            const pathReceptora = document.getElementById('valReceptora')?.value || '';
+            const donanteContacts = data.donante || [];
+            const receptoraContacts = data.receptora || [];
+            const combinados = data.combinados || [];
+
+            const donanteCorreos = donanteContacts.map(c => c.correo).filter(Boolean).sort().join(',');
+            const receptoraCorreos = receptoraContacts.map(c => c.correo).filter(Boolean).sort().join(',');
+            const sonDistintasAreas = pathDonante && pathReceptora && (donanteCorreos !== receptoraCorreos);
+
+            if (sonDistintasAreas) {
+                grid.innerHTML = `
+                    <div style="margin-bottom: 0.85rem;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 0.6rem;">
+                            🔴 Encargados Máquina Donante (Origen: ${pathDonante.split(' > ').pop()})
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                            ${donanteContacts.map(renderCardHtml).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 800; color: #166534; background: #dcfce7; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 0.6rem;">
+                            🟢 Encargados Máquina Receptora (Destino: ${pathReceptora.split(' > ').pop()})
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                            ${receptoraContacts.map(renderCardHtml).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                        ${combinados.map(renderCardHtml).join('')}
+                    </div>
+                `;
+            }
+        }
 
         async function actualizarEncargadosArea() {
             const pathDonante = document.getElementById('valDonante')?.value || '';
             const pathReceptora = document.getElementById('valReceptora')?.value || '';
             const container = document.getElementById('containerEncargadosArea');
-            const grid = document.getElementById('gridEncargadosArea');
-            const listaCorreos = document.getElementById('listaCorreosNotificacion');
 
             if (!pathDonante && !pathReceptora) {
                 if (container) container.style.display = 'none';
@@ -1086,70 +1392,22 @@
                 const data = await response.json();
                 ultimosEncargadosArea = data;
 
-                if (!grid || !container) return;
-
-                const donanteContacts = data.donante || [];
-                const receptoraContacts = data.receptora || [];
                 const combinados = data.combinados || [];
-
                 if (combinados.length === 0) {
-                    container.style.display = 'none';
+                    if (container) container.style.display = 'none';
                     return;
                 }
 
-                // Verificar si donante y receptora pertenecen a áreas distintas
-                const donanteCorreos = donanteContacts.map(c => c.correo).filter(Boolean).sort().join(',');
-                const receptoraCorreos = receptoraContacts.map(c => c.correo).filter(Boolean).sort().join(',');
-                const sonDistintasAreas = pathDonante && pathReceptora && (donanteCorreos !== receptoraCorreos);
-
-                function renderCardHtml(c) {
-                    return `
-                        <div style="background: white; padding: 0.6rem 0.8rem; border-radius: 0.5rem; border: 1px solid #bae6fd; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                            <div style="font-weight: 800; color: #0284c7; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px;">
-                                ${c.cargo === 'ETL' ? '👔 ETL' : c.cargo === 'Planner' ? '📋 Planner' : c.cargo.includes('Ingeniero') ? '🛠️ Ing. Mantenimiento' : '👤 ' + c.cargo}
-                            </div>
-                            <div style="font-weight: 700; color: #1e293b; font-size: 0.85rem;">${c.nombre}</div>
-                            <div style="font-size: 0.7rem; color: #0284c7; font-weight: 600; word-break: break-all; overflow-wrap: anywhere;">📧 ${c.correo || 'Sin correo'}</div>
-                            <div style="font-size: 0.65rem; color: #64748b; margin-top: 2px;">📍 ${c.division || ''} - ${c.area || c.departamento || ''}</div>
-                        </div>
-                    `;
+                if (!encargadosManualModificados) {
+                    correosNotificacionForm = (data.correos_notificacion || []).slice();
                 }
 
-                if (sonDistintasAreas) {
-                    grid.innerHTML = `
-                        <div style="margin-bottom: 0.85rem;">
-                            <div style="font-size: 0.8rem; font-weight: 800; color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 0.6rem;">
-                                🔴 Encargados Máquina Donante (Origen: ${pathDonante.split(' > ').pop()})
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
-                                ${donanteContacts.map(renderCardHtml).join('')}
-                            </div>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.8rem; font-weight: 800; color: #166534; background: #dcfce7; border: 1px solid #86efac; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 0.6rem;">
-                                🟢 Encargados Máquina Receptora (Destino: ${pathReceptora.split(' > ').pop()})
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
-                                ${receptoraContacts.map(renderCardHtml).join('')}
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    grid.innerHTML = `
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
-                            ${combinados.map(renderCardHtml).join('')}
-                        </div>
-                    `;
-                }
+                renderGridEncargados(data);
+                renderizarChipsForm();
 
-                const correos = data.correos_notificacion || [];
-                if (listaCorreos) {
-                    listaCorreos.innerText = correos.join('; ') || 'Sin correos';
-                }
+                if (container) container.style.display = 'block';
 
-                container.style.display = 'block';
-
-                // Poblar el selector estricto de Responsable por Reponer con los encargados del área
+                // Poblar selector estricto de Responsable por Reponer
                 const respSelect = document.getElementById('responsable_reposicion');
                 if (respSelect) {
                     const prevValue = respSelect.value;
@@ -1159,7 +1417,6 @@
                         </option>
                     `).join('');
 
-                    // Seleccionar por defecto al Planner
                     let defaultIndex = combinados.findIndex(c => c.cargo === 'Planner');
                     if (defaultIndex === -1) defaultIndex = 0;
 
@@ -1169,7 +1426,6 @@
                         respSelect.selectedIndex = defaultIndex;
                     }
 
-                    // Actualizar inputs ocultos del responsable
                     const selectedOpt = respSelect.options[respSelect.selectedIndex];
                     if (selectedOpt) {
                         const emailCont = document.getElementById('email_responsable_container');
@@ -1196,6 +1452,79 @@
             }
         }
 
+        function renderizarChipsForm() {
+            const container = document.getElementById('chipsCorreosForm');
+            if (!container) return;
+
+            if (correosNotificacionForm.length === 0) {
+                container.innerHTML = '<span style="font-size:0.75rem; color:#dc2626; font-weight:700; font-style:italic;">🚫 Ningún correo configurado (no se enviarán notificaciones). Agregue uno abajo o utilice los botones.</span>';
+            } else {
+                container.innerHTML = correosNotificacionForm.map((email, idx) => `
+                    <span style="display:inline-flex; align-items:center; gap:0.4rem; background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">
+                        📧 ${email}
+                        <button type="button" onclick="eliminarCorreoChipForm(${idx})" style="background:#bae6fd; border:none; color:#0369a1; border-radius:50%; width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-weight:bold; font-size:0.85rem; padding:0; line-height:1;" title="Eliminar ${email} de la lista">&times;</button>
+                    </span>
+                `).join('');
+            }
+
+            actualizarEnlaceCorreoNotificacion();
+        }
+
+        function eliminarCorreoChipForm(index) {
+            encargadosManualModificados = true;
+            correosNotificacionForm.splice(index, 1);
+            renderizarChipsForm();
+            if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
+        }
+
+        function toggleContactoCard(email) {
+            encargadosManualModificados = true;
+            const idx = correosNotificacionForm.indexOf(email);
+            if (idx !== -1) {
+                correosNotificacionForm.splice(idx, 1);
+            } else {
+                correosNotificacionForm.push(email);
+            }
+            renderizarChipsForm();
+            if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
+        }
+
+        function agregarCorreoCustomForm() {
+            const input = document.getElementById('inputNuevoCorreoForm');
+            if (!input) return;
+            const email = input.value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Por favor ingrese una dirección de correo válida.');
+                return;
+            }
+
+            encargadosManualModificados = true;
+            if (!correosNotificacionForm.includes(email)) {
+                correosNotificacionForm.push(email);
+            }
+            input.value = '';
+            renderizarChipsForm();
+            if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
+        }
+
+        function quitarCorreosRealesTest() {
+            encargadosManualModificados = true;
+            correosNotificacionForm = [];
+            renderizarChipsForm();
+            if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
+            alert("Se han retirado todos los correos de la lista.");
+        }
+
+        function agregarCorreoTestRapido() {
+            const miCorreo = "cristian_curin@goodyear.com";
+            encargadosManualModificados = true;
+            correosNotificacionForm = [miCorreo];
+            renderizarChipsForm();
+            if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
+            alert(`Se configuró únicamente el correo de prueba (${miCorreo}).`);
+        }
+
         function actualizarEnlaceCorreoNotificacion() {
             const btnMail = document.getElementById('btnEnviarCorreoNotificacion');
             if (!btnMail) return;
@@ -1207,29 +1536,30 @@
             const cantidad = document.querySelector('input[name="cantidad"]')?.value || '1';
             const ot = document.getElementById('orden_trabajo')?.value || 'S/N';
             const retiradoPor = document.getElementById('retirado_por')?.value || 'N/A';
-            const correoTecnico = document.getElementById('correo_tecnico')?.value || '';
             const responsable = document.getElementById('responsable_reposicion')?.value || 'N/A';
-            const correoResponsable = document.getElementById('correo_responsable')?.value || '';
-            
+
             const codigoBodega = document.getElementById('codigo_bodega')?.value || '';
             const tieneBodegaValida = codigoBodega && codigoBodega !== 'SIN UBICACIÓN DESIGNADA' && codigoBodega !== 'Autocompletado al buscar...';
             const personalBodegaText = tieneBodegaValida ? (document.getElementById('personal_bodega')?.value || 'N/A') : 'No aplica (Sin ubicación en bodega - Gestión de Planner / Ing. Mtto)';
-            const correoBodega = tieneBodegaValida ? (document.getElementById('correo_bodega')?.value || '') : '';
 
             const fechaEstimada = document.querySelector('input[name="tiempo_reposicion"]')?.value || 'N/A';
             const razon = document.querySelector('textarea[name="razon"]')?.value || 'N/A';
             const planAccion = document.querySelector('textarea[name="plan_accion"]')?.value || 'N/A';
 
-            let toList = [];
-            if (ultimosEncargadosArea && ultimosEncargadosArea.correos_notificacion) {
-                toList = [...ultimosEncargadosArea.correos_notificacion];
+            // Auto-poblar o usar asunto personalizado
+            const inputAsunto = document.getElementById('asuntoCorreoForm');
+            const defaultSubject = `[CANIBALIZACIÓN] Notificación de Cambio de Repuesto - OT: ${ot}`;
+            if (inputAsunto && (!inputAsunto.value || inputAsunto.value.startsWith('[CANIBALIZACIÓN]'))) {
+                inputAsunto.value = defaultSubject;
             }
-            if (correoTecnico && !toList.includes(correoTecnico)) toList.push(correoTecnico);
-            if (correoResponsable && !toList.includes(correoResponsable)) toList.push(correoResponsable);
-            if (correoBodega && !toList.includes(correoBodega)) toList.push(correoBodega);
 
-            const subject = encodeURIComponent(`[CANIBALIZACIÓN] Notificación de Cambio de Repuesto - OT: ${ot}`);
-            const bodyText = `Estimados,
+            const customSubject = (inputAsunto && inputAsunto.value.trim()) ? inputAsunto.value.trim() : defaultSubject;
+            const customNota = document.getElementById('notaCorreoForm')?.value.trim() || '';
+
+            let toList = correosNotificacionForm.slice();
+
+            const subject = encodeURIComponent(customSubject);
+            let bodyText = `Estimados,
 
 Se ha realizado el registro oficial de una canibalización de repuesto en Planta Goodyear L504. A continuación se detallan los datos del evento y los encargados asignados por área:
 
@@ -1252,6 +1582,23 @@ PERSONAL Y RESPONSABLES
 --------------------------------------------------
 • Retirado por (Técnico): ${retiradoPor}
 • Responsable por Reponer: ${responsable}
+• Personal de Bodega: ${personalBodegaText}
+• Fecha Estimada Reposición: ${fechaEstimada}
+
+--------------------------------------------------
+PLAN DE ACCIÓN PREVENTIVO
+--------------------------------------------------
+${planAccion}`;
+
+            if (customNota) {
+                bodyText += `\n\n--------------------------------------------------\nNOTA ADICIONAL DEL REMITENTE\n--------------------------------------------------\n${customNota}`;
+            }
+
+            bodyText += `\n\n--------------------------------------------------\nMensaje generado automáticamente por el Sistema de Canibalización Goodyear L504 (PMAN-7503).`;
+
+            const mailtoUrl = `mailto:${toList.join(',')}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+            btnMail.href = mailtoUrl;
+        }eponer: ${responsable}
 • Personal de Bodega: ${personalBodegaText}
 • Fecha Estimada Reposición: ${fechaEstimada}
 
@@ -1486,8 +1833,8 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
             targetMachineContext = context;
             const titulo = document.getElementById('modalArbolTitulo');
             if (titulo) {
-                titulo.innerText = context === 'donante' 
-                    ? 'Explorador - Selección Máquina DONANTE' 
+                titulo.innerText = context === 'donante'
+                    ? 'Explorador - Selección Máquina DONANTE'
                     : 'Explorador - Selección Máquina RECEPTORA';
             }
         };
@@ -1642,10 +1989,10 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
             if (!currentParent) return;
 
             let pathAcumulado = '';
-            
+
             for (let i = 0; i < parts.length; i++) {
                 pathAcumulado = pathAcumulado ? `${pathAcumulado} > ${parts[i]}` : parts[i];
-                
+
                 let searchContainer = currentParent;
                 if (currentParent.classList.contains('children-container')) {
                     searchContainer = currentParent;
@@ -1668,7 +2015,7 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
                 if (i < parts.length - 1) {
                     const toggle = nodeDiv.querySelector(':scope > .node-content > .node-toggle');
                     const childrenContainer = nodeDiv.querySelector(':scope > .children-container');
-                    
+
                     if (toggle && childrenContainer) {
                         if (!toggle.classList.contains('expanded') || childrenContainer.innerHTML === '') {
                             toggle.click();
@@ -1846,11 +2193,211 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
             });
         });
 
+        // Lógica de correos y modal de confirmación
+        let correosConfirmacionList = [];
+        let ultimoPayloadRegistro = null;
+        let modoPruebaSinCorreosReales = false;
+
+        function quitarCorreosRealesTest() {
+            modoPruebaSinCorreosReales = true;
+            if (ultimosEncargadosArea) {
+                ultimosEncargadosArea.correos_notificacion = [];
+            }
+            const listaCorreos = document.getElementById('listaCorreosNotificacion');
+            if (listaCorreos) {
+                listaCorreos.innerText = '🚫 Correos reales retirados (Modo Prueba)';
+                listaCorreos.style.color = '#dc2626';
+            }
+            actualizarEnlaceCorreoNotificacion();
+            alert("Se han retirado todos los correos reales de la estructura para esta prueba.");
+        }
+
+        function agregarCorreoTestRapido() {
+            const miCorreo = "cristian_curin@goodyear.com";
+            modoPruebaSinCorreosReales = true;
+            if (!ultimosEncargadosArea) {
+                ultimosEncargadosArea = { correos_notificacion: [] };
+            }
+            ultimosEncargadosArea.correos_notificacion = [miCorreo];
+            
+            const listaCorreos = document.getElementById('listaCorreosNotificacion');
+            if (listaCorreos) {
+                listaCorreos.innerText = miCorreo + " (Solo prueba)";
+                listaCorreos.style.color = '#0284c7';
+            }
+            actualizarEnlaceCorreoNotificacion();
+            alert(`Se configuró exclusivamente el correo de prueba (${miCorreo}) para notificaciones.`);
+        }
+
+        function quitarTodosCorreosModal() {
+            correosConfirmacionList = [];
+            renderizarChipsCorreos();
+            actualizarMailtoConfirmacion();
+        }
+
+        function usarSoloMiCorreoModal() {
+            correosConfirmacionList = ["cristian_curin@goodyear.com"];
+            renderizarChipsCorreos();
+            actualizarMailtoConfirmacion();
+        }
+
+        function mostrarModalConfirmacion(data, newId) {
+            ultimoPayloadRegistro = data;
+            const modalConfirmacion = document.getElementById('modalConfirmacionExito');
+            if (!modalConfirmacion) return;
+
+            // Poblar datos resumidos en el modal
+            document.getElementById('confRecordId').innerText = `#${newId.length >= 8 ? newId.substring(newId.length - 8) : newId}`;
+            document.getElementById('confFecha').innerText = data.fecha || new Date().toISOString().split('T')[0];
+            document.getElementById('confOT').innerText = data.orden_trabajo || 'S/N';
+            document.getElementById('confRepuesto').innerText = `${data.repuesto_nombre || 'Repuesto'} (${data.repuesto_codigo || 'SIN CÓDIGO'})`;
+
+            const donanteShort = (data.maquina_donante || 'N/A').split(' > ').pop();
+            const receptoraShort = (data.maquina_receptora || 'N/A').split(' > ').pop();
+            document.getElementById('confOrigen').innerText = donanteShort;
+            document.getElementById('confDestino').innerText = receptoraShort;
+
+            document.getElementById('confTecnico').innerText = data.retirado_por || 'N/A';
+            document.getElementById('confResponsable').innerText = data.responsable_reposicion || 'N/A';
+
+            // Configurar enlace Ver Detalle
+            const btnDetalle = document.getElementById('btnVerDetalleConfirmacion');
+            if (btnDetalle) {
+                btnDetalle.href = `detail.html?id=${encodeURIComponent(newId)}`;
+            }
+
+            // Recopilar lista de correos destinatarios desde la selección del formulario o encargados
+            if (correosNotificacionForm && correosNotificacionForm.length > 0) {
+                correosConfirmacionList = [...correosNotificacionForm];
+            } else {
+                correosConfirmacionList = [];
+                if (ultimosEncargadosArea && ultimosEncargadosArea.correos_notificacion) {
+                    correosConfirmacionList = [...ultimosEncargadosArea.correos_notificacion];
+                }
+                if (data.correo_tecnico && !correosConfirmacionList.includes(data.correo_tecnico)) {
+                    correosConfirmacionList.push(data.correo_tecnico);
+                }
+                if (data.correo_responsable && !correosConfirmacionList.includes(data.correo_responsable)) {
+                    correosConfirmacionList.push(data.correo_responsable);
+                }
+                if (data.correo_bodega && !correosConfirmacionList.includes(data.correo_bodega)) {
+                    correosConfirmacionList.push(data.correo_bodega);
+                }
+            }
+
+            renderizarChipsCorreos();
+            actualizarMailtoConfirmacion();
+
+            modalConfirmacion.style.display = 'flex';
+        }
+
+        function renderizarChipsCorreos() {
+            const container = document.getElementById('confCorreosChips');
+            if (!container) return;
+
+            if (correosConfirmacionList.length === 0) {
+                container.innerHTML = '<span style="font-size:0.8rem; color:#94a3b8; font-style:italic;">Sin correos destinatarios. Agregue uno abajo.</span>';
+                return;
+            }
+
+            container.innerHTML = correosConfirmacionList.map((email, idx) => `
+                <span style="display:inline-flex; align-items:center; gap:0.4rem; background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; padding:4px 10px; border-radius:20px; font-size:0.78rem; font-weight:700;">
+                    📧 ${email}
+                    <button type="button" onclick="quitarCorreoPrueba(${idx})" style="background:none; border:none; color:#0369a1; cursor:pointer; font-weight:bold; font-size:1rem; padding:0 2px; line-height:1;" title="Quitar correo de la lista">&times;</button>
+                </span>
+            `).join('');
+        }
+
+        function quitarCorreoPrueba(index) {
+            correosConfirmacionList.splice(index, 1);
+            renderizarChipsCorreos();
+            actualizarMailtoConfirmacion();
+        }
+
+        function agregarCorreoPruebaModal() {
+            const input = document.getElementById('inputCustomEmail');
+            if (!input) return;
+            const email = input.value.trim();
+
+            if (!email || !email.includes('@')) {
+                alert('Por favor ingrese una dirección de correo válida (ej: cristian_curin@goodyear.com).');
+                return;
+            }
+
+            if (!correosConfirmacionList.includes(email)) {
+                correosConfirmacionList.push(email);
+            }
+
+            input.value = '';
+            renderizarChipsCorreos();
+            actualizarMailtoConfirmacion();
+        }
+
+        function actualizarMailtoConfirmacion() {
+            const btnMail = document.getElementById('btnRedactarCorreoConfirmacion');
+            if (!btnMail || !ultimoPayloadRegistro) return;
+
+            const data = ultimoPayloadRegistro;
+            const ot = data.orden_trabajo || 'S/N';
+            const pathDonante = data.maquina_donante || 'N/A';
+            const pathReceptora = data.maquina_receptora || 'N/A';
+            const repuesto = data.repuesto_nombre || 'Repuesto';
+            const codigo = data.repuesto_codigo || 'S/N';
+            const cantidad = data.cantidad || '1';
+            const retiradoPor = data.retirado_por || 'N/A';
+            const responsable = data.responsable_reposicion || 'N/A';
+            const fechaEstimada = data.tiempo_reposicion || 'N/A';
+            const razon = data.razon || 'N/A';
+            const planAccion = data.plan_accion || 'N/A';
+
+            const subject = encodeURIComponent(`[CANIBALIZACIÓN] Registro Confirmado - OT: ${ot}`);
+            const bodyText = `Estimados,
+
+Se ha completado exitosamente el registro oficial de canibalización de repuesto en Planta Goodyear L504 (PMAN-7503):
+
+--------------------------------------------------
+DATOS GENERALES DEL REGISTRO
+--------------------------------------------------
+• Orden de Trabajo (OT): ${ot}
+• Máquina Donante (Origen): ${pathDonante}
+• Máquina Receptora (Destino): ${pathReceptora}
+
+--------------------------------------------------
+REPUESTO Y PERSONAL
+--------------------------------------------------
+• Repuesto: ${repuesto} (Código: ${codigo})
+• Cantidad Retirada: ${cantidad} UN
+• Retirado por (Técnico): ${retiradoPor}
+• Responsable por Reponer: ${responsable}
+• Fecha Estimada Reposición: ${fechaEstimada}
+
+--------------------------------------------------
+JUSTIFICACIÓN Y PLAN PREVENTIVO
+--------------------------------------------------
+• Motivo: ${razon}
+• Plan de Acción: ${planAccion}
+
+--------------------------------------------------
+Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Planta L504.`;
+
+            const mailtoUrl = `mailto:${correosConfirmacionList.join(',')}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+            btnMail.href = mailtoUrl;
+        }
+
+        function cerrarModalConfirmacion() {
+            const modalConfirmacion = document.getElementById('modalConfirmacionExito');
+            if (modalConfirmacion) modalConfirmacion.style.display = 'none';
+        }
+
         document.getElementById('canibalizacionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
+
+            if (!data.id) {
+                data.id = Date.now().toString();
+            }
 
             if (data.cantidad) {
                 data.cantidad = parseInt(data.cantidad);
@@ -1897,13 +2444,16 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
                 });
 
                 if (response.ok) {
-                    alert('Registro guardado con éxito.');
+                    const resData = await response.json();
+                    const savedId = resData.id || data.id;
+
+                    // Limpiar campos del formulario para el siguiente ingreso
                     e.target.reset();
                     document.getElementById('stockStatusContainer').style.display = 'none';
-                    
+
                     const msc = document.getElementById('maquinaSeleccionadaContainer');
                     if (msc) msc.style.display = 'none';
-                    
+
                     const containerDonante = document.getElementById('containerDonante');
                     if (containerDonante) containerDonante.style.display = 'none';
                     const containerReceptora = document.getElementById('containerReceptora');
@@ -1911,6 +2461,49 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
 
                     actualizarEstadoPersonalBodega(false);
 
+                    // Verificar si el checkbox de envío automático está activado
+                    const checkAuto = document.getElementById('checkEnviarAutoForm');
+                    const autoSend = checkAuto && checkAuto.checked;
+                    const modoEnvio = document.querySelector('input[name="modoEnvioCorreo"]:checked')?.value || 'backend';
+
+                    actualizarEnlaceCorreoNotificacion();
+                    const mailtoUrl = document.getElementById('btnEnviarCorreoNotificacion')?.href;
+
+                    // Desplegar Pop-Up Modal de Confirmación con Resumen y Gestión de Correos
+                    mostrarModalConfirmacion(data, savedId);
+
+                    if (autoSend && correosNotificacionForm.length > 0) {
+                        if (modoEnvio === 'backend') {
+                            try {
+                                const inputAsunto = document.getElementById('asuntoCorreoForm');
+                                const customSubject = inputAsunto?.value.trim() || `[CANIBALIZACIÓN] Notificación - OT: ${data.orden_trabajo || 'S/N'}`;
+                                const customNota = document.getElementById('notaCorreoForm')?.value.trim() || '';
+
+                                let mensajeBody = `Estimados,\n\nSe ha registrado oficialmente la canibalización #${savedId}.\n• OT: ${data.orden_trabajo || 'N/A'}\n• Donante: ${data.maquina_donante || 'N/A'}\n• Receptora: ${data.maquina_receptora || 'N/A'}\n• Repuesto: ${data.repuesto_nombre || 'N/A'} (Código: ${data.repuesto_codigo || 'SIN CÓDIGO'})\n• Retirado por: ${data.retirado_por || 'N/A'}\n• Responsable: ${data.responsable_reposicion || 'N/A'}\n• Fecha Reposición: ${data.tiempo_reposicion || 'N/A'}\n• Razón: ${data.razon || 'N/A'}\n• Plan de Acción: ${data.plan_accion || 'N/A'}`;
+                                if (customNota) mensajeBody += `\n\n[NOTA ADICIONAL]: ${customNota}`;
+
+                                fetch('/api/enviar-correo-backend', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        destinatarios: correosNotificacionForm,
+                                        asunto: customSubject,
+                                        mensaje: mensajeBody
+                                    })
+                                }).then(res => res.json()).then(resData => {
+                                    if (resData.success) {
+                                        console.log("Correo procesado en segundo plano:", resData);
+                                    }
+                                }).catch(e => console.error("Error envío backend:", e));
+                            } catch (eMailErr) {
+                                console.error("Error al procesar envío backend:", eMailErr);
+                            }
+                        } else if (modoEnvio === 'outlook' && mailtoUrl && mailtoUrl.startsWith('mailto:')) {
+                            setTimeout(() => {
+                                window.location.href = mailtoUrl;
+                            }, 200);
+                        }
+                    }
 
                 } else {
                     alert('Error al guardar el registro.');
@@ -1922,9 +2515,218 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L50
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
             }
+            actualizarIndicadorSesion();
         });
 
+        function actualizarIndicadorSesion() {
+            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const usuario = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
+            const nombre = sessionStorage.getItem('session_nombre') || localStorage.getItem('session_nombre');
+            const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
+
+            const nameSpan = document.getElementById('sessionUserName');
+            const btnLoginLogout = document.getElementById('btnLoginLogout');
+            const navAdminLink = document.getElementById('navAdminLink');
+
+            if (token && usuario) {
+                if (nameSpan) nameSpan.innerHTML = `👤 <b>${nombre || usuario}</b> <small style="opacity:0.85; margin-left:2px;">(${rol || 'Usuario'})</small>`;
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🚪 Cerrar Sesión';
+                    btnLoginLogout.onclick = cerrarSesion;
+                    btnLoginLogout.style.background = '#fee2e2';
+                    btnLoginLogout.style.color = '#991b1b';
+                    btnLoginLogout.style.border = '1px solid #f87171';
+                }
+                if (navAdminLink) navAdminLink.style.display = (rol === 'admin') ? 'inline-flex' : 'none';
+
+                const regUser = document.getElementById('usuario_registro');
+                if (regUser) regUser.value = usuario;
+            } else {
+                if (nameSpan) nameSpan.innerText = '👤 Invitado / Sin sesión';
+                if (btnLoginLogout) {
+                    btnLoginLogout.innerText = '🔑 Iniciar Sesión';
+                    btnLoginLogout.onclick = toggleLoginModal;
+                    btnLoginLogout.style.background = 'var(--primary-color, #002855)';
+                    btnLoginLogout.style.color = 'var(--accent-yellow, #FFDD00)';
+                    btnLoginLogout.style.border = '1px solid var(--accent-yellow, #FFDD00)';
+                }
+                if (navAdminLink) navAdminLink.style.display = 'none';
+            }
+        }
+
+        function toggleLoginModal() {
+            const modal = document.getElementById('modalLogin');
+            if (modal) {
+                modal.style.display = 'flex';
+                const err = document.getElementById('loginError');
+                if (err) err.style.display = 'none';
+            }
+        }
+
+        function cerrarModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function quickLogin(user, pass) {
+            document.getElementById('loginUsuario').value = user;
+            document.getElementById('loginContrasena').value = pass;
+            await procesarLogin(new Event('submit'));
+        }
+
+        async function procesarLogin(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const contrasena = document.getElementById('loginContrasena').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contrasena })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    sessionStorage.setItem('session_token', data.token);
+                    sessionStorage.setItem('session_usuario', data.usuario);
+                    sessionStorage.setItem('session_rol', data.rol);
+                    sessionStorage.setItem('session_nombre', data.nombre);
+
+                    localStorage.setItem('session_token', data.token);
+                    localStorage.setItem('session_usuario', data.usuario);
+                    localStorage.setItem('session_rol', data.rol);
+                    localStorage.setItem('session_nombre', data.nombre);
+
+                    cerrarModal('modalLogin');
+                    actualizarIndicadorSesion();
+
+                    if (data.rol === 'admin') {
+                        alert(`¡Bienvenido ${data.nombre}! Sesión iniciada como Administrador.`);
+                    }
+                    return;
+                } else {
+                    if (errorDiv) {
+                        errorDiv.innerText = data.detail || 'Usuario o contraseña incorrectos';
+                        errorDiv.style.display = 'block';
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.warn("Fallo backend /api/login, usando fallback local:", err);
+            }
+
+            // Fallback Local de Prueba
+            const MOCK_USERS = {
+                'planificador': { rol: 'planificador', nombre: 'Planificador L504', pass: 'goodyear123' },
+                'confiabilidad': { rol: 'ingeniero_confiabilidad', nombre: 'Ing. Confiabilidad L504', pass: 'goodyear123' },
+                'admin': { rol: 'admin', nombre: 'Administrador de Ingeniería', pass: 'admin123' },
+                'ac42028': { rol: 'admin', nombre: 'Usuario AC42028 (Pruebas)', pass: 'goodyear123' }
+            };
+
+            const userKey = usuario.toLowerCase();
+            if (MOCK_USERS[userKey] && (MOCK_USERS[userKey].pass === contrasena || contrasena === 'goodyear123' || contrasena === 'admin123')) {
+                const mock = MOCK_USERS[userKey];
+                sessionStorage.setItem('session_token', 'local-token-' + Date.now());
+                sessionStorage.setItem('session_usuario', userKey);
+                sessionStorage.setItem('session_rol', mock.rol);
+                sessionStorage.setItem('session_nombre', mock.nombre);
+
+                localStorage.setItem('session_token', 'local-token-' + Date.now());
+                localStorage.setItem('session_usuario', userKey);
+                localStorage.setItem('session_rol', mock.rol);
+                localStorage.setItem('session_nombre', mock.nombre);
+
+                cerrarModal('modalLogin');
+                actualizarIndicadorSesion();
+
+                if (mock.rol === 'admin') {
+                    alert(`¡Bienvenido ${mock.nombre}! Sesión iniciada como Administrador.`);
+                }
+            } else {
+                if (errorDiv) {
+                    errorDiv.innerText = 'Usuario o contraseña incorrectos';
+                    errorDiv.style.display = 'block';
+                }
+            }
+        }
+
+        async function cerrarSesion() {
+            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            if (token) {
+                try {
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            sessionStorage.clear();
+            localStorage.clear();
+            actualizarIndicadorSesion();
+        }
+
+        // Inicializar estado de sesión
+                window.toggleLoginModal = toggleLoginModal;
+        window.cerrarModal = cerrarModal;
+        window.cerrarSesion = cerrarSesion;
+        window.quickLogin = quickLogin;
+        window.procesarLogin = procesarLogin;
+        actualizarIndicadorSesion();
     </script>
+
+    <!-- Modal de Login Universal -->
+    <div id="modalLogin" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: #fff; width: 90%; max-width: 440px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid #e2e8f0; animation: fadeIn 0.2s ease-out;">
+            <div style="padding: 1.25rem 1.5rem; background: #002855; color: white; border-bottom: 3px solid #FFDD00; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin:0; font-size: 1.15rem; color: #FFDD00; font-weight: 800; font-family: 'Outfit', sans-serif;">🔑 Acceso de Usuario</h2>
+                <button type="button" onclick="cerrarModal('modalLogin')" style="background: none; border: none; font-size: 1.75rem; cursor: pointer; color: #FFDD00; line-height: 1;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; line-height: 1.4;">
+                    Ingrese con su cuenta autorizada o seleccione una cuenta de prueba rápida a continuación:
+                </p>
+                <form id="formLogin" onsubmit="procesarLogin(event)">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Usuario</label>
+                        <input type="text" id="loginUsuario" required placeholder="Ej: planificador, confiabilidad, admin, ac42028..." style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Contraseña</label>
+                        <input type="password" id="loginContrasena" required placeholder="••••••••" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
+                    </div>
+                    <button type="submit" style="width: 100%; padding: 0.75rem; background: #002855; color: #FFDD00; border: 2px solid #FFDD00; border-radius: 0.5rem; font-weight: 800; cursor: pointer; font-size: 0.95rem; text-transform: uppercase; box-shadow: 0 4px 6px rgba(0,40,85,0.2);">Iniciar Sesión</button>
+                    <div id="loginError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
+                </form>
+
+                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
+                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
+                    <strong style="color: #002855; display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                        <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>planificador</b> <small style="color:#64748b;">(Planificador)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('confiabilidad', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👤 <b>confiabilidad</b> <small style="color:#64748b;">(Ing. Confiabilidad)</small></span>
+                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('admin', 'admin123')" style="text-align: left; padding: 6px 10px; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>👑 <b>admin</b> <small style="color:#854d0e;">(Administrador)</small></span>
+                            <span style="color:#854d0e; font-weight:700;">Ingresar →</span>
+                        </button>
+                        <button type="button" onclick="quickLogin('ac42028', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🔧 <b>ac42028</b> <small style="color:#1d4ed8;">(Técnico / Pruebas)</small></span>
+                            <span style="color:#1e40af; font-weight:700;">Ingresar →</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 
