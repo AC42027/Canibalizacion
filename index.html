@@ -6,7 +6,7 @@
     <title>Canibalización de Repuestos | Registro Oficial</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
-    <script>
+        <script>
         function toggleLoginModal() {
             const modal = document.getElementById('modalLogin');
             if (modal) {
@@ -24,10 +24,20 @@
             const modal = document.getElementById(id);
             if (modal) modal.style.display = 'none';
         }
+        async function quickLogin(user, pass) {
+            const uInput = document.getElementById('loginUsuario');
+            const pInput = document.getElementById('loginContrasena');
+            if (uInput) uInput.value = user;
+            if (pInput) pInput.value = pass;
+            if (typeof procesarLogin === 'function') {
+                await procesarLogin(new Event('submit'));
+            }
+        }
         window.toggleLoginModal = toggleLoginModal;
         window.cerrarModal = cerrarModal;
+        window.quickLogin = quickLogin;
     </script>
-</head>
+</head></head>
 
 <body>
 
@@ -1595,20 +1605,6 @@ ${planAccion}`;
             }
 
             bodyText += `\n\n--------------------------------------------------\nMensaje generado automáticamente por el Sistema de Canibalización Goodyear L504 (PMAN-7503).`;
-
-            const mailtoUrl = `mailto:${toList.join(',')}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
-            btnMail.href = mailtoUrl;
-        }eponer: ${responsable}
-• Personal de Bodega: ${personalBodegaText}
-• Fecha Estimada Reposición: ${fechaEstimada}
-
---------------------------------------------------
-PLAN DE ACCIÓN PREVENTIVO
---------------------------------------------------
-${planAccion}
-
---------------------------------------------------
-Mensaje generado automáticamente por el Sistema de Canibalización Goodyear L504 (PMAN-7503).`;
 
             const mailtoUrl = `mailto:${toList.join(',')}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
             btnMail.href = mailtoUrl;

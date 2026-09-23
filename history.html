@@ -450,7 +450,7 @@
             box-shadow: inset 4px 0 0 var(--accent-yellow);
         }
     </style>
-    <script>
+        <script>
         function toggleLoginModal() {
             const modal = document.getElementById('modalLogin');
             if (modal) {
@@ -468,10 +468,20 @@
             const modal = document.getElementById(id);
             if (modal) modal.style.display = 'none';
         }
+        async function quickLogin(user, pass) {
+            const uInput = document.getElementById('loginUsuario');
+            const pInput = document.getElementById('loginContrasena');
+            if (uInput) uInput.value = user;
+            if (pInput) pInput.value = pass;
+            if (typeof procesarLogin === 'function') {
+                await procesarLogin(new Event('submit'));
+            }
+        }
         window.toggleLoginModal = toggleLoginModal;
         window.cerrarModal = cerrarModal;
+        window.quickLogin = quickLogin;
     </script>
-</head>
+</head></head>
 
 <body>
 
