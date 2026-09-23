@@ -2468,37 +2468,39 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
                     // Desplegar Pop-Up Modal de Confirmación con Resumen y Gestión de Correos
                     mostrarModalConfirmacion(data, savedId);
 
-                    if (autoSend && correosNotificacionForm.length > 0) {
-                        if (modoEnvio === 'backend') {
-                            try {
-                                const inputAsunto = document.getElementById('asuntoCorreoForm');
-                                const customSubject = inputAsunto?.value.trim() || `[CANIBALIZACIÓN] Notificación - OT: ${data.orden_trabajo || 'S/N'}`;
-                                const customNota = document.getElementById('notaCorreoForm')?.value.trim() || '';
+                    // Envío automático de correo en segundo plano
+                    let destList = [...correosNotificacionForm];
+                    if (destList.length === 0) {
+                        destList = ["cristian_curin@goodyear.com"];
+                    }
 
-                                let mensajeBody = `Estimados,\n\nSe ha registrado oficialmente la canibalización #${savedId}.\n• OT: ${data.orden_trabajo || 'N/A'}\n• Donante: ${data.maquina_donante || 'N/A'}\n• Receptora: ${data.maquina_receptora || 'N/A'}\n• Repuesto: ${data.repuesto_nombre || 'N/A'} (Código: ${data.repuesto_codigo || 'SIN CÓDIGO'})\n• Retirado por: ${data.retirado_por || 'N/A'}\n• Responsable: ${data.responsable_reposicion || 'N/A'}\n• Fecha Reposición: ${data.tiempo_reposicion || 'N/A'}\n• Razón: ${data.razon || 'N/A'}\n• Plan de Acción: ${data.plan_accion || 'N/A'}`;
-                                if (customNota) mensajeBody += `\n\n[NOTA ADICIONAL]: ${customNota}`;
+                    // En modo trabajo normal (con sesión), incluir correo del usuario logueado si existe
+                    const activeUser = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
+                    if (activeUser && activeUser.includes('@') && !destList.includes(activeUser)) {
+                        destList.push(activeUser);
+                    }
 
-                                fetch('/api/enviar-correo-backend', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        destinatarios: correosNotificacionForm,
-                                        asunto: customSubject,
-                                        mensaje: mensajeBody
-                                    })
-                                }).then(res => res.json()).then(resData => {
-                                    if (resData.success) {
-                                        console.log("Correo procesado en segundo plano:", resData);
-                                    }
-                                }).catch(e => console.error("Error envío backend:", e));
-                            } catch (eMailErr) {
-                                console.error("Error al procesar envío backend:", eMailErr);
-                            }
-                        } else if (modoEnvio === 'outlook' && mailtoUrl && mailtoUrl.startsWith('mailto:')) {
-                            setTimeout(() => {
-                                window.location.href = mailtoUrl;
-                            }, 200);
-                        }
+                    try {
+                        const inputAsunto = document.getElementById('asuntoCorreoForm');
+                        const customSubject = inputAsunto?.value.trim() || `[CANIBALIZACIÓN] Notificación - OT: ${data.orden_trabajo || 'S/N'}`;
+                        const customNota = document.getElementById('notaCorreoForm')?.value.trim() || '';
+
+                        let mensajeBody = `Estimados,\n\nSe ha registrado oficialmente la canibalización #${savedId}.\n• OT: ${data.orden_trabajo || 'N/A'}\n• Donante: ${data.maquina_donante || 'N/A'}\n• Receptora: ${data.maquina_receptora || 'N/A'}\n• Repuesto: ${data.repuesto_nombre || 'N/A'} (Código: ${data.repuesto_codigo || 'SIN CÓDIGO'})\n• Retirado por: ${data.retirado_por || 'N/A'}\n• Responsable: ${data.responsable_reposicion || 'N/A'}\n• Fecha Reposición: ${data.tiempo_reposicion || 'N/A'}\n• Razón: ${data.razon || 'N/A'}\n• Plan de Acción: ${data.plan_accion || 'N/A'}`;
+                        if (customNota) mensajeBody += `\n\n[NOTA ADICIONAL]: ${customNota}`;
+
+                        fetch('/api/enviar-correo-backend', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                destinatarios: destList,
+                                asunto: customSubject,
+                                mensaje: mensajeBody
+                            })
+                        }).then(res => res.json()).then(resData => {
+                            console.log("Correo procesado en segundo plano:", resData);
+                        }).catch(e => console.error("Error envío backend:", e));
+                    } catch (eMailErr) {
+                        console.error("Error al procesar envío backend:", eMailErr);
                     }
 
                 } else {
