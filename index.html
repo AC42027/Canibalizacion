@@ -1518,7 +1518,7 @@
             if (ultimosEncargadosArea) renderGridEncargados(ultimosEncargadosArea);
         }
 
-        function quitarCorreosRealesTest() {
+        function quitarCorreosRealesTestModal() {
             encargadosManualModificados = true;
             correosNotificacionForm = [];
             renderizarChipsForm();
@@ -1526,7 +1526,7 @@
             alert("Se han retirado todos los correos de la lista.");
         }
 
-        function agregarCorreoTestRapido() {
+        function agregarCorreoTestRapidoModal() {
             const miCorreo = "cristian_curin@goodyear.com";
             encargadosManualModificados = true;
             correosNotificacionForm = [miCorreo];
@@ -2194,36 +2194,7 @@ ${planAccion}`;
         let ultimoPayloadRegistro = null;
         let modoPruebaSinCorreosReales = false;
 
-        function quitarCorreosRealesTest() {
-            modoPruebaSinCorreosReales = true;
-            if (ultimosEncargadosArea) {
-                ultimosEncargadosArea.correos_notificacion = [];
-            }
-            const listaCorreos = document.getElementById('listaCorreosNotificacion');
-            if (listaCorreos) {
-                listaCorreos.innerText = '🚫 Correos reales retirados (Modo Prueba)';
-                listaCorreos.style.color = '#dc2626';
-            }
-            actualizarEnlaceCorreoNotificacion();
-            alert("Se han retirado todos los correos reales de la estructura para esta prueba.");
-        }
 
-        function agregarCorreoTestRapido() {
-            const miCorreo = "cristian_curin@goodyear.com";
-            modoPruebaSinCorreosReales = true;
-            if (!ultimosEncargadosArea) {
-                ultimosEncargadosArea = { correos_notificacion: [] };
-            }
-            ultimosEncargadosArea.correos_notificacion = [miCorreo];
-            
-            const listaCorreos = document.getElementById('listaCorreosNotificacion');
-            if (listaCorreos) {
-                listaCorreos.innerText = miCorreo + " (Solo prueba)";
-                listaCorreos.style.color = '#0284c7';
-            }
-            actualizarEnlaceCorreoNotificacion();
-            alert(`Se configuró exclusivamente el correo de prueba (${miCorreo}) para notificaciones.`);
-        }
 
         function quitarTodosCorreosModal() {
             correosConfirmacionList = [];
@@ -2552,25 +2523,7 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
             }
         }
 
-        function toggleLoginModal() {
-            const modal = document.getElementById('modalLogin');
-            if (modal) {
-                modal.style.display = 'flex';
-                const err = document.getElementById('loginError');
-                if (err) err.style.display = 'none';
-            }
-        }
 
-        function cerrarModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) modal.style.display = 'none';
-        }
-
-        async function quickLogin(user, pass) {
-            document.getElementById('loginUsuario').value = user;
-            document.getElementById('loginContrasena').value = pass;
-            await procesarLogin(new Event('submit'));
-        }
 
         async function procesarLogin(e) {
             if (e && e.preventDefault) e.preventDefault();

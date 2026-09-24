@@ -414,10 +414,6 @@
             }
         }
 
-        function cerrarModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) modal.style.display = 'none';
-        }
 
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
@@ -457,30 +453,7 @@
             }
         }
 
-        function toggleLoginModal() {
-            abrirModal('modalLogin');
-        }
-
-        async function quickLogin(user, pass) {
-            document.getElementById('loginUsuario').value = user;
-            document.getElementById('loginContrasena').value = pass;
-            await procesarLogin(new Event('submit'));
-        }
-
-        // Cierre de Sesión (Logout)
-        window.cerrarSesion = async function() {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
-            if (token) {
-                try {
-                    await fetch('/api/logout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token })
-                    });
-                } catch (err) {
-                    console.error("Error al notificar logout al backend:", err);
-                }
-            }
+        
             sessionStorage.removeItem('session_token');
             sessionStorage.removeItem('session_usuario');
             sessionStorage.removeItem('session_rol');

@@ -869,25 +869,8 @@
             }
         }
 
-        function toggleLoginModal() {
-            const modal = document.getElementById('modalLogin');
-            if (modal) {
-                modal.style.display = 'flex';
-                const err = document.getElementById('loginError');
-                if (err) err.style.display = 'none';
-            }
-        }
 
-        function cerrarModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) modal.style.display = 'none';
-        }
 
-        async function quickLogin(user, pass) {
-            document.getElementById('loginUsuario').value = user;
-            document.getElementById('loginContrasena').value = pass;
-            await procesarLogin(new Event('submit'));
-        }
 
         async function procesarLogin(e) {
             if (e && e.preventDefault) e.preventDefault();
