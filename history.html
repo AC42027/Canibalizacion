@@ -450,38 +450,19 @@
             box-shadow: inset 4px 0 0 var(--accent-yellow);
         }
     </style>
-        <script>
-        function toggleLoginModal() {
-            const modal = document.getElementById('modalLogin');
-            if (modal) {
-                const currentDisplay = window.getComputedStyle(modal).display;
-                if (currentDisplay === 'none') {
-                    modal.style.display = 'flex';
-                    const err = document.getElementById('loginError');
-                    if (err) err.style.display = 'none';
-                } else {
-                    modal.style.display = 'none';
-                }
-            }
+    <script>
+        function irAPantallaPrincipalLogin() {
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `index.html?login=true&redirect=${currentUrl}`;
         }
         function cerrarModal(id) {
             const modal = document.getElementById(id);
             if (modal) modal.style.display = 'none';
         }
-        async function quickLogin(user, pass) {
-            const uInput = document.getElementById('loginUsuario');
-            const pInput = document.getElementById('loginContrasena');
-            if (uInput) uInput.value = user;
-            if (pInput) pInput.value = pass;
-            if (typeof procesarLogin === 'function') {
-                await procesarLogin(new Event('submit'));
-            }
-        }
-        window.toggleLoginModal = toggleLoginModal;
+        window.irAPantallaPrincipalLogin = irAPantallaPrincipalLogin;
         window.cerrarModal = cerrarModal;
-        window.quickLogin = quickLogin;
     </script>
-</head></head>
+</head>
 
 <body>
 
@@ -939,7 +920,7 @@
                         </td>
                         <td style="text-align: center;">
                             ${statusBadge}
-                            <button onclick="eliminarRegistro(event, '${idStr}')" style="margin-top: 8px; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'" title="Eliminar registro (Modo Prueba)">🗑️ Eliminar</button>
+                            <button onclick="eliminarRegistro(event, '${idStr}')" style="display: none; margin-top: 8px; background: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'" title="Eliminar registro (Modo Prueba)">🗑️ Eliminar</button>
                         </td>
                     </tr>
                 `;
@@ -993,62 +974,29 @@
         }
     </script>
 
-    <!-- Modal de Login -->
-    <div id="modalLogin" class="modal" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: #fff; width: 90%; max-width: 440px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid var(--border);">
-            <div style="padding: 1.25rem 1.5rem; background: var(--primary); color: white; border-bottom: 3px solid var(--accent-yellow); display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin:0; font-size: 1.15rem; color: var(--accent-yellow); font-weight: 800; font-family: 'Outfit', sans-serif;">Iniciar Sesión</h2>
-                <button type="button" onclick="cerrarModal('modalLogin')" style="background: none; border: none; font-size: 1.75rem; cursor: pointer; color: var(--accent-yellow); line-height: 1;">&times;</button>
-            </div>
-            <div style="padding: 1.5rem;">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    Ingrese con sus credenciales de <strong>Planificador</strong>, <strong>Ingeniero de Confiabilidad</strong> o <strong>Administrador</strong>.
-                </p>
-                <form id="formLogin" onsubmit="procesarLogin(event)">
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.3rem;">Usuario</label>
-                        <input type="text" id="loginUsuario" required placeholder="Ej: planificador, confiabilidad, admin..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
-                    </div>
-                    <div style="margin-bottom: 1.25rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.3rem;">Contraseña</label>
-                        <input type="password" id="loginContrasena" required placeholder="••••••••" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.95rem; outline: none;">
-                    </div>
-                    <button type="submit" style="width: 100%; padding: 0.75rem; background: var(--primary); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); border-radius: 0.5rem; font-weight: 800; cursor: pointer; font-size: 0.95rem; text-transform: uppercase;">Iniciar Sesión</button>
-                    <div id="loginError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
-                </form>
-
-                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
-                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border); font-size: 0.75rem; color: var(--text-muted);">
-                    <strong style="color: var(--primary); display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                        <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👤 <b>planificador</b> <small style="color:#64748b;">(Planificador)</small></span>
-                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('confiabilidad', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👤 <b>confiabilidad</b> <small style="color:#64748b;">(Ing. Confiabilidad)</small></span>
-                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('admin', 'admin123')" style="text-align: left; padding: 6px 10px; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👑 <b>admin</b> <small style="color:#854d0e;">(Administrador)</small></span>
-                            <span style="color:#854d0e; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('ac42028', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>🔧 <b>ac42028</b> <small style="color:#1d4ed8;">(Técnico / Pruebas)</small></span>
-                            <span style="color:#1e40af; font-weight:700;">Ingresar →</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
+        function syncAndGetSession() {
+            let token = localStorage.getItem('session_token') || sessionStorage.getItem('session_token') || '';
+            let usuario = localStorage.getItem('session_usuario') || sessionStorage.getItem('session_usuario') || '';
+            let nombre = localStorage.getItem('session_nombre') || sessionStorage.getItem('session_nombre') || '';
+            let rol = localStorage.getItem('session_rol') || sessionStorage.getItem('session_rol') || '';
+
+            if (token && usuario) {
+                localStorage.setItem('session_token', token);
+                localStorage.setItem('session_usuario', usuario);
+                if (nombre) localStorage.setItem('session_nombre', nombre);
+                if (rol) localStorage.setItem('session_rol', rol);
+
+                sessionStorage.setItem('session_token', token);
+                sessionStorage.setItem('session_usuario', usuario);
+                if (nombre) sessionStorage.setItem('session_nombre', nombre);
+                if (rol) sessionStorage.setItem('session_rol', rol);
+            }
+            return { token, usuario, nombre, rol };
+        }
+
         function actualizarIndicadorSesion() {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
-            const usuario = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
-            const nombre = sessionStorage.getItem('session_nombre') || localStorage.getItem('session_nombre');
-            const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
+            const { token, usuario, nombre, rol } = syncAndGetSession();
 
             const nameSpan = document.getElementById('sessionUserName');
             const btnLoginLogout = document.getElementById('btnLoginLogout');
@@ -1070,98 +1018,18 @@
                 if (nameSpan) nameSpan.innerText = '👤 Invitado / Sin sesión';
                 if (btnLoginLogout) {
                     btnLoginLogout.innerText = '🔑 Iniciar Sesión';
-                    btnLoginLogout.onclick = toggleLoginModal;
+                    btnLoginLogout.onclick = irAPantallaPrincipalLogin;
                     btnLoginLogout.style.background = 'var(--primary)';
                     btnLoginLogout.style.color = 'var(--accent-yellow)';
                     btnLoginLogout.style.border = '1px solid var(--accent-yellow)';
                 }
-                if (activeUserVal) activeUserVal.innerText = sessionStorage.getItem('session_usuario') || 'ac42027';
+                if (activeUserVal) activeUserVal.innerText = 'Invitado / Sin sesión';
                 if (navAdminLink) navAdminLink.style.display = 'none';
             }
         }
 
-
-
-
-        async function procesarLogin(e) {
-            if (e && e.preventDefault) e.preventDefault();
-            const usuario = document.getElementById('loginUsuario').value.trim();
-            const contrasena = document.getElementById('loginContrasena').value;
-            const errorDiv = document.getElementById('loginError');
-
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, contrasena })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    sessionStorage.setItem('session_token', data.token);
-                    sessionStorage.setItem('session_usuario', data.usuario);
-                    sessionStorage.setItem('session_rol', data.rol);
-                    sessionStorage.setItem('session_nombre', data.nombre);
-
-                    localStorage.setItem('session_token', data.token);
-                    localStorage.setItem('session_usuario', data.usuario);
-                    localStorage.setItem('session_rol', data.rol);
-                    localStorage.setItem('session_nombre', data.nombre);
-
-                    cerrarModal('modalLogin');
-                    actualizarIndicadorSesion();
-
-                    if (data.rol === 'admin') {
-                        alert(`¡Bienvenido ${data.nombre}! Tienes acceso activado al Panel de Administración.`);
-                    }
-                    return;
-                } else {
-                    if (errorDiv) {
-                        errorDiv.innerText = data.detail || 'Usuario o contraseña incorrectos';
-                        errorDiv.style.display = 'block';
-                    }
-                    return;
-                }
-            } catch (err) {
-                console.warn("Fallo backend /api/login, usando fallback local:", err);
-            }
-
-            // Fallback Local de Prueba
-            const MOCK_USERS = {
-                'planificador': { rol: 'planificador', nombre: 'Planificador L504', pass: 'goodyear123' },
-                'confiabilidad': { rol: 'ingeniero_confiabilidad', nombre: 'Ing. Confiabilidad L504', pass: 'goodyear123' },
-                'admin': { rol: 'admin', nombre: 'Administrador de Ingeniería', pass: 'admin123' },
-                'ac42028': { rol: 'admin', nombre: 'Usuario AC42028 (Pruebas)', pass: 'goodyear123' }
-            };
-
-            const userKey = usuario.toLowerCase();
-            if (MOCK_USERS[userKey] && (MOCK_USERS[userKey].pass === contrasena || contrasena === 'goodyear123' || contrasena === 'admin123')) {
-                const mock = MOCK_USERS[userKey];
-                sessionStorage.setItem('session_token', 'local-token-' + Date.now());
-                sessionStorage.setItem('session_usuario', userKey);
-                sessionStorage.setItem('session_rol', mock.rol);
-                sessionStorage.setItem('session_nombre', mock.nombre);
-
-                localStorage.setItem('session_token', 'local-token-' + Date.now());
-                localStorage.setItem('session_usuario', userKey);
-                localStorage.setItem('session_rol', mock.rol);
-                localStorage.setItem('session_nombre', mock.nombre);
-
-                cerrarModal('modalLogin');
-                actualizarIndicadorSesion();
-
-                if (mock.rol === 'admin') {
-                    alert(`¡Bienvenido ${mock.nombre}! Tienes acceso activado al Panel de Administración.`);
-                }
-            } else {
-                if (errorDiv) {
-                    errorDiv.innerText = 'Usuario o contraseña incorrectos';
-                    errorDiv.style.display = 'block';
-                }
-            }
-        }
-
         async function cerrarSesion() {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const { token } = syncAndGetSession();
             if (token) {
                 try {
                     await fetch('/api/logout', {
@@ -1170,7 +1038,7 @@
                         body: JSON.stringify({ token })
                     });
                 } catch (err) {
-                    console.error(err);
+                    console.error("Error al cerrar sesión:", err);
                 }
             }
             sessionStorage.clear();
@@ -1178,12 +1046,7 @@
             actualizarIndicadorSesion();
         }
 
-        // Inicializar indicador de sesión
-                window.toggleLoginModal = toggleLoginModal;
-        window.cerrarModal = cerrarModal;
         window.cerrarSesion = cerrarSesion;
-        window.quickLogin = quickLogin;
-        window.procesarLogin = procesarLogin;
         actualizarIndicadorSesion();
         cargarDatos();
     </script>

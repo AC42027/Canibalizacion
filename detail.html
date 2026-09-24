@@ -283,34 +283,16 @@
             font-size: 0.85rem;
         }
     </style>
-        <script>
-        function toggleLoginModal() {
-            const modal = document.getElementById('modalLogin');
-            if (modal) {
-                const currentDisplay = window.getComputedStyle(modal).display;
-                if (currentDisplay === 'none') {
-                    modal.style.display = 'flex';
-                    const err = document.getElementById('loginError');
-                    if (err) err.style.display = 'none';
-                } else {
-                    modal.style.display = 'none';
-                }
-            }
+    <script>
+        function irAPantallaPrincipalLogin() {
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `index.html?login=true&redirect=${currentUrl}`;
         }
         function cerrarModal(id) {
             const modal = document.getElementById(id);
             if (modal) modal.style.display = 'none';
         }
-        async function quickLogin(user, pass) {
-            const uInput = document.getElementById('loginUsuario');
-            const pInput = document.getElementById('loginContrasena');
-            if (uInput) uInput.value = user;
-            if (pInput) pInput.value = pass;
-            if (typeof procesarLogin === 'function') {
-                await procesarLogin(new Event('submit'));
-            }
-        }
-        window.toggleLoginModal = toggleLoginModal;
+        window.irAPantallaPrincipalLogin = irAPantallaPrincipalLogin;
         window.cerrarModal = cerrarModal;
     </script>
 </head>
@@ -322,63 +304,13 @@
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <div id="sessionIndicator" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.1); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem;">
                 <span id="sessionUserName" style="font-weight: 700; color: var(--accent-yellow);">👤 Invitado / Sin sesión</span>
-                <button id="btnLoginLogout" onclick="toggleLoginModal()" style="background: var(--accent-yellow); color: var(--primary); border: none; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; cursor: pointer;">
+                <button id="btnLoginLogout" onclick="irAPantallaPrincipalLogin()" style="background: var(--accent-yellow); color: var(--primary); border: none; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 0.75rem; cursor: pointer;">
                     🔑 Iniciar Sesión
                 </button>
             </div>
             <a href="admin.html" id="navAdminLink" style="display: none; background: #fef9c3; color: #854d0e; border: 1px solid #facc15; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; text-decoration: none;">⚙️ Admin</a>
         </div>
     </nav>
-
-    <!-- Modal de Login (Acceso Autorizado) -->
-    <div id="modalLogin" class="modal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: #fff; width: 90%; max-width: 440px; border-radius: 1rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; border: 1px solid #e2e8f0;">
-            <div class="modal-header" style="padding: 1.25rem 1.5rem; background: #002855; color: white; border-bottom: 3px solid #FFDD00; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin:0; font-size: 1.15rem; color: #FFDD00; font-weight: 800; font-family: 'Outfit', sans-serif;">🔑 Ingreso Autorizado</h2>
-                <button type="button" class="btn-close" onclick="cerrarModal('modalLogin')">&times;</button>
-            </div>
-            <div class="modal-body" style="padding: 1.5rem;">
-                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem; line-height: 1.4;">
-                    Esta acción requiere privilegios de <strong>Planificador</strong>, <strong>Ingeniero de Confiabilidad</strong> o <strong>Administrador</strong>.
-                </p>
-                <form id="formLogin" onsubmit="procesarLogin(event)">
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Usuario</label>
-                        <input type="text" id="loginUsuario" class="form-control" placeholder="Ej: planificador, confiabilidad, admin, ac42028..." required>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 1.25rem;">
-                        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #002855; text-transform: uppercase; margin-bottom: 0.3rem;">Contraseña</label>
-                        <input type="password" id="loginContrasena" class="form-control" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="btn-submit" style="width: 100%; padding: 0.75rem; background: #002855; color: #FFDD00; border: 2px solid #FFDD00; border-radius: 0.5rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">Iniciar Sesión</button>
-                    <div id="loginError" class="error-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
-                </form>
-
-                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
-                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
-                    <strong style="color: #002855; display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                        <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👤 <b>planificador</b> <small style="color:#64748b;">(Planificador)</small></span>
-                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('confiabilidad', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👤 <b>confiabilidad</b> <small style="color:#64748b;">(Ing. Confiabilidad)</small></span>
-                            <span style="color:#002855; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('admin', 'admin123')" style="text-align: left; padding: 6px 10px; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>👑 <b>admin</b> <small style="color:#854d0e;">(Administrador)</small></span>
-                            <span style="color:#854d0e; font-weight:700;">Ingresar →</span>
-                        </button>
-                        <button type="button" onclick="quickLogin('ac42028', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
-                            <span>🔧 <b>ac42028</b> <small style="color:#1d4ed8;">(Técnico / Pruebas)</small></span>
-                            <span style="color:#1e40af; font-weight:700;">Ingresar →</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal de Edición de Fecha -->
     <div id="modalEditarFecha" class="modal">
@@ -401,10 +333,14 @@
     </div>
 
     <!-- Contenedor Principal de Detalle -->
-    <main id="content" class="container" style="max-width: 1000px; margin: 2rem auto; padding: 0 1rem;"></main>
+    <main id="content" class="container" style="max-width: 1000px; margin: 2rem auto; padding: 0 1rem;">
+        <div style="text-align: center; padding: 4rem; color: var(--primary); font-weight: 700;">
+            ⏳ Cargando detalles del registro...
+        </div>
+    </main>
 
     <script>
-        // Funciones de control de modales
+        // Control de modales
         function abrirModal(id) {
             const modal = document.getElementById(id);
             if (modal) {
@@ -414,26 +350,58 @@
             }
         }
 
-
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.style.display = 'none';
             }
         });
 
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatMultiline(str) {
+            if (!str) return 'Sin información';
+            return escapeHTML(str).replace(/\n/g, '<br>');
+        }
+
+        // Obtener y sincronizar sesión activa entre localStorage y sessionStorage
+        function syncAndGetSession() {
+            let token = localStorage.getItem('session_token') || sessionStorage.getItem('session_token') || '';
+            let usuario = localStorage.getItem('session_usuario') || sessionStorage.getItem('session_usuario') || '';
+            let nombre = localStorage.getItem('session_nombre') || sessionStorage.getItem('session_nombre') || '';
+            let rol = localStorage.getItem('session_rol') || sessionStorage.getItem('session_rol') || '';
+
+            if (token && usuario) {
+                localStorage.setItem('session_token', token);
+                localStorage.setItem('session_usuario', usuario);
+                if (nombre) localStorage.setItem('session_nombre', nombre);
+                if (rol) localStorage.setItem('session_rol', rol);
+
+                sessionStorage.setItem('session_token', token);
+                sessionStorage.setItem('session_usuario', usuario);
+                if (nombre) sessionStorage.setItem('session_nombre', nombre);
+                if (rol) sessionStorage.setItem('session_rol', rol);
+            }
+            return { token, usuario, nombre, rol };
+        }
+
         // Actualizar indicador de usuario en Navbar
         function actualizarIndicadorSesion() {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
-            const usuario = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
-            const nombre = sessionStorage.getItem('session_nombre') || localStorage.getItem('session_nombre');
-            const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
+            const { token, usuario, nombre, rol } = syncAndGetSession();
 
             const nameSpan = document.getElementById('sessionUserName');
             const btnLoginLogout = document.getElementById('btnLoginLogout');
             const navAdminLink = document.getElementById('navAdminLink');
 
             if (token && usuario) {
-                if (nameSpan) nameSpan.innerHTML = `👤 <b>${nombre || usuario}</b> <small style="opacity:0.85; margin-left:2px;">(${rol || 'Usuario'})</small>`;
+                if (nameSpan) nameSpan.innerHTML = `👤 <b>${escapeHTML(nombre || usuario)}</b> <small style="opacity:0.85; margin-left:2px;">(${escapeHTML(rol || 'Usuario')})</small>`;
                 if (btnLoginLogout) {
                     btnLoginLogout.innerText = '🚪 Cerrar Sesión';
                     btnLoginLogout.onclick = cerrarSesion;
@@ -445,7 +413,7 @@
                 if (nameSpan) nameSpan.innerText = '👤 Invitado / Sin sesión';
                 if (btnLoginLogout) {
                     btnLoginLogout.innerText = '🔑 Iniciar Sesión';
-                    btnLoginLogout.onclick = toggleLoginModal;
+                    btnLoginLogout.onclick = irAPantallaPrincipalLogin;
                     btnLoginLogout.style.background = 'var(--accent-yellow)';
                     btnLoginLogout.style.color = 'var(--primary)';
                 }
@@ -453,12 +421,21 @@
             }
         }
 
-        
-            sessionStorage.removeItem('session_token');
-            sessionStorage.removeItem('session_usuario');
-            sessionStorage.removeItem('session_rol');
-            sessionStorage.removeItem('session_nombre');
-            
+        async function cerrarSesion() {
+            const { token } = syncAndGetSession();
+            if (token) {
+                try {
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                } catch (err) {
+                    console.error("Error al cerrar sesión:", err);
+                }
+            }
+            sessionStorage.clear();
+            localStorage.clear();
             actualizarIndicadorSesion();
         }
 
@@ -467,138 +444,41 @@
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
             inactivityTimer = setTimeout(() => {
-                if (sessionStorage.getItem('session_token')) {
+                const { token } = syncAndGetSession();
+                if (token) {
                     cerrarSesion();
                     alert("Tu sesión ha expirado por inactividad.");
                 }
             }, 600000); // 10 minutos
         }
 
-        // Registrar eventos para reiniciar el temporizador
         ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, resetInactivityTimer, true);
         });
 
-        // Inicializar
-        resetInactivityTimer();
-        actualizarIndicadorSesion();
-
-        // Variable para controlar la acción pendiente tras iniciar sesión
-        window.accionPendiente = null;
-
         // Abrir edición de fecha (verifica sesión previa)
         window.abrirEdicionFecha = function(fechaActual) {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const { token } = syncAndGetSession();
             if (!token) {
-                window.accionPendiente = { tipo: 'editar_fecha', data: fechaActual };
-                abrirModal('modalLogin');
-            } else {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                const todayStr = `${year}-${month}-${day}`;
-
-                const dateInput = document.getElementById('nuevaFechaInput');
-                if (dateInput) {
-                    dateInput.value = fechaActual;
-                    dateInput.min = todayStr;
+                if (confirm("Debe iniciar sesión en la pantalla principal para modificar la fecha de reposición. ¿Desea ir a la pantalla principal para iniciar sesión?")) {
+                    irAPantallaPrincipalLogin();
                 }
-                abrirModal('modalEditarFecha');
-            }
-        }
-
-        // Procesar Inicio de Sesión
-        async function procesarLogin(event) {
-            if (event && event.preventDefault) event.preventDefault();
-            const usuario = document.getElementById('loginUsuario').value.trim();
-            const contrasena = document.getElementById('loginContrasena').value;
-            const errorDiv = document.getElementById('loginError');
-            
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ usuario, contrasena })
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    sessionStorage.setItem('session_token', data.token);
-                    sessionStorage.setItem('session_usuario', data.usuario);
-                    sessionStorage.setItem('session_rol', data.rol);
-                    sessionStorage.setItem('session_nombre', data.nombre);
-
-                    localStorage.setItem('session_token', data.token);
-                    localStorage.setItem('session_usuario', data.usuario);
-                    localStorage.setItem('session_rol', data.rol);
-                    localStorage.setItem('session_nombre', data.nombre);
-                    
-                    actualizarIndicadorSesion();
-                    cerrarModal('modalLogin');
-                    
-                    if (window.accionPendiente) {
-                        if (window.accionPendiente.tipo === 'editar_fecha') {
-                            abrirEdicionFecha(window.accionPendiente.data);
-                        } else if (window.accionPendiente.tipo === 'normalizar') {
-                            confirmarNormalizacion(window.accionPendiente.data);
-                        }
-                        window.accionPendiente = null;
-                    }
-                    return;
-                } else {
-                    if (errorDiv) {
-                        errorDiv.innerText = data.detail || 'Usuario o contraseña incorrectos';
-                        errorDiv.style.display = 'block';
-                    }
-                    return;
-                }
-            } catch (err) {
-                console.warn("Fallo backend /api/login, usando fallback local:", err);
+                return;
             }
 
-            // Fallback Local de Prueba
-            const MOCK_USERS = {
-                'planificador': { rol: 'planificador', nombre: 'Planificador L504', pass: 'goodyear123' },
-                'confiabilidad': { rol: 'ingeniero_confiabilidad', nombre: 'Ing. Confiabilidad L504', pass: 'goodyear123' },
-                'admin': { rol: 'admin', nombre: 'Administrador de Ingeniería', pass: 'admin123' },
-                'ac42028': { rol: 'admin', nombre: 'Usuario AC42028 (Pruebas)', pass: 'goodyear123' }
-            };
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
 
-            const userKey = usuario.toLowerCase();
-            if (MOCK_USERS[userKey] && (MOCK_USERS[userKey].pass === contrasena || contrasena === 'goodyear123' || contrasena === 'admin123')) {
-                const mock = MOCK_USERS[userKey];
-                sessionStorage.setItem('session_token', 'local-token-' + Date.now());
-                sessionStorage.setItem('session_usuario', userKey);
-                sessionStorage.setItem('session_rol', mock.rol);
-                sessionStorage.setItem('session_nombre', mock.nombre);
-
-                localStorage.setItem('session_token', 'local-token-' + Date.now());
-                localStorage.setItem('session_usuario', userKey);
-                localStorage.setItem('session_rol', mock.rol);
-                localStorage.setItem('session_nombre', mock.nombre);
-
-                        window.toggleLoginModal = toggleLoginModal;
-        window.cerrarModal = cerrarModal;
-        window.cerrarSesion = cerrarSesion;
-        window.quickLogin = quickLogin;
-        window.procesarLogin = procesarLogin;
-        actualizarIndicadorSesion();
-                cerrarModal('modalLogin');
-
-                if (window.accionPendiente) {
-                    if (window.accionPendiente.tipo === 'editar_fecha') {
-                        abrirEdicionFecha(window.accionPendiente.data);
-                    }
-                    window.accionPendiente = null;
-                }
-            } else {
-                if (errorDiv) {
-                    errorDiv.innerText = 'Usuario o contraseña incorrectos';
-                    errorDiv.style.display = 'block';
-                }
+            const dateInput = document.getElementById('nuevaFechaInput');
+            if (dateInput) {
+                dateInput.value = fechaActual || todayStr;
+                dateInput.min = todayStr;
             }
-        }
+            abrirModal('modalEditarFecha');
+        };
 
         // Procesar Edición de Fecha
         async function procesarEdicionFecha(event) {
@@ -606,11 +486,11 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
             const nuevaFecha = document.getElementById('nuevaFechaInput').value;
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const { token } = syncAndGetSession();
             const errorDiv = document.getElementById('editError');
 
             if (!id || !nuevaFecha || !token) {
-                alert('Faltan datos requeridos.');
+                alert('Faltan datos requeridos o la sesión ha expirado.');
                 return;
             }
 
@@ -621,8 +501,10 @@
             const todayStr = `${year}-${month}-${day}`;
 
             if (nuevaFecha < todayStr) {
-                errorDiv.innerText = 'La fecha de reposición no puede ser menor a la fecha de hoy.';
-                errorDiv.style.display = 'block';
+                if (errorDiv) {
+                    errorDiv.innerText = 'La fecha de reposición no puede ser menor a la fecha de hoy.';
+                    errorDiv.style.display = 'block';
+                }
                 return;
             }
 
@@ -638,13 +520,17 @@
                     cerrarModal('modalEditarFecha');
                     location.reload();
                 } else {
-                    errorDiv.innerText = data.detail || 'Error al actualizar la fecha';
-                    errorDiv.style.display = 'block';
+                    if (errorDiv) {
+                        errorDiv.innerText = data.detail || data.error || 'Error al actualizar la fecha';
+                        errorDiv.style.display = 'block';
+                    }
                 }
             } catch (err) {
                 console.error(err);
-                errorDiv.innerText = 'Error de conexión';
-                errorDiv.style.display = 'block';
+                if (errorDiv) {
+                    errorDiv.innerText = 'Error de conexión con el servidor.';
+                    errorDiv.style.display = 'block';
+                }
             }
         }
 
@@ -666,15 +552,15 @@
                     list.innerHTML = historial.map(h => {
                         let detalleTexto = "";
                         if (h.campo_modificado === 'normalizado') {
-                            detalleTexto = `Cambió el estado a <strong>${h.valor_nuevo}</strong> (era ${h.valor_anterior})`;
+                            detalleTexto = `Cambió el estado a <strong>${escapeHTML(h.valor_nuevo)}</strong> (era ${escapeHTML(h.valor_anterior)})`;
                         } else {
-                            detalleTexto = `Cambió la fecha estimada de reposición de <code>${h.valor_anterior}</code> a <code>${h.valor_nuevo}</code>`;
+                            detalleTexto = `Cambió la fecha estimada de reposición de <code>${escapeHTML(h.valor_anterior)}</code> a <code>${escapeHTML(h.valor_nuevo)}</code>`;
                         }
                         return `
                             <div class="history-item">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <span class="history-user">👤 ${h.usuario}</span>
-                                    <span class="history-date">🕒 ${h.fecha_cambio}</span>
+                                    <span class="history-user">👤 ${escapeHTML(h.usuario)}</span>
+                                    <span class="history-date">🕒 ${escapeHTML(h.fecha_cambio)}</span>
                                 </div>
                                 <span class="history-details">${detalleTexto}</span>
                             </div>
@@ -689,8 +575,17 @@
         async function cargarDetalle() {
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
+            const container = document.getElementById('content');
+            if (!container) return;
+
             if (!id) {
-                document.getElementById('content').innerHTML = "<h1>Error: No se proporcionó un ID de registro.</h1>";
+                container.innerHTML = `
+                    <div class="card full-width" style="text-align: center; padding: 3rem;">
+                        <h1 style="color: var(--danger); font-size: 1.5rem;">⚠️ No se proporcionó un ID de registro.</h1>
+                        <p style="color: var(--text-muted); margin: 1rem 0;">Por favor regrese al historial y seleccione un registro válido.</p>
+                        <a href="history.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 700;">← Volver al Historial</a>
+                    </div>
+                `;
                 return;
             }
 
@@ -698,8 +593,14 @@
                 const response = await fetch(`/api/registros/${id}`);
                 const r = await response.json();
 
-                if (r.error) {
-                    document.getElementById('content').innerHTML = `<h1>Error: ${r.error}</h1>`;
+                if (r.error || !response.ok) {
+                    container.innerHTML = `
+                        <div class="card full-width" style="text-align: center; padding: 3rem;">
+                            <h1 style="color: var(--danger); font-size: 1.5rem;">⚠️ ${escapeHTML(r.error || 'Registro no encontrado')}</h1>
+                            <p style="color: var(--text-muted); margin: 1rem 0;">El registro solicitado (ID: #${escapeHTML(id)}) no existe en la base de datos o fue eliminado.</p>
+                            <a href="history.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 700;">← Volver al Historial</a>
+                        </div>
+                    `;
                     return;
                 }
 
@@ -708,16 +609,20 @@
 
                 const idStr = r.id ? String(r.id) : '00000000';
                 const displayId = idStr.length >= 8 ? idStr.substring(idStr.length - 8) : idStr;
-                const donanteName = r.maquina_donante ? r.maquina_donante.split(' > ').pop() : 'N/A';
-                const receptoraName = r.maquina_receptora ? r.maquina_receptora.split(' > ').pop() : 'N/A';
+                const donanteFull = r.maquina_donante || 'N/A';
+                const receptoraFull = r.maquina_receptora || 'N/A';
+                const donanteName = donanteFull !== 'N/A' ? donanteFull.split(' > ').pop() : 'N/A';
+                const receptoraName = receptoraFull !== 'N/A' ? receptoraFull.split(' > ').pop() : 'N/A';
 
-                document.getElementById('content').innerHTML = `
+                const fechaReposicionStr = r.tiempo_reposicion || 'N/A';
+
+                container.innerHTML = `
                     <div class="header-section">
                         <div>
                             <div class="label">Registro de Canibalización</div>
-                            <h1 class="record-id">#${displayId}</h1>
-                            <div style="font-size: 1.1rem; color: var(--primary); font-weight: 700; margin-bottom: 0.25rem;">Orden de Trabajo: ${r.orden_trabajo || 'N/A'}</div>
-                            <div style="font-size: 0.9rem; color: var(--text-muted);">Registrado el ${r.fecha_registro || 'S/F'} por <b>${r.usuario_registro || 'Sistema'}</b></div>
+                            <h1 class="record-id">#${escapeHTML(displayId)}</h1>
+                            <div style="font-size: 1.1rem; color: var(--primary); font-weight: 700; margin-bottom: 0.25rem;">Orden de Trabajo: ${escapeHTML(r.orden_trabajo || 'N/A')}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted);">Registrado el ${escapeHTML(r.fecha_registro || 'S/F')} por <b>${escapeHTML(r.usuario_registro || 'Sistema')}</b></div>
                         </div>
                         <div style="text-align: right;">
                             ${(r.codigo_bodega === 'SIN UBICACIÓN DESIGNADA' || !r.repuesto_codigo) 
@@ -734,14 +639,14 @@
                         <div class="machine-flow">
                             <div class="machine-box">
                                 <div class="label" style="color: var(--danger);">Origen (Donante)</div>
-                                <div class="value-large">${donanteName}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">${r.maquina_donante || 'N/A'}</div>
+                                <div class="value-large">${escapeHTML(donanteName)}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${escapeHTML(donanteFull)}</div>
                             </div>
                             <div class="flow-arrow">➔</div>
                             <div class="machine-box">
                                 <div class="label" style="color: var(--success);">Destino (Receptora)</div>
-                                <div class="value-large">${receptoraName}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-muted);">${r.maquina_receptora || 'N/A'}</div>
+                                <div class="value-large">${escapeHTML(receptoraName)}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">${escapeHTML(receptoraFull)}</div>
                             </div>
                         </div>
                     </div>
@@ -749,22 +654,22 @@
                     <div class="grid">
                         <div class="card">
                             <div class="label">Información del Repuesto</div>
-                            <div class="value-large" style="color: var(--primary);">${r.repuesto_nombre || 'N/A'}</div>
+                            <div class="value-large" style="color: var(--primary);">${escapeHTML(r.repuesto_nombre || 'N/A')}</div>
                             
                             <div class="label">Código SAP / PN</div>
-                            <div class="value" style="color: #0369a1; font-weight: 700;">${r.repuesto_codigo || 'SIN CÓDIGO'}</div>
+                            <div class="value" style="color: #0369a1; font-weight: 700;">${escapeHTML(r.repuesto_codigo || 'SIN CÓDIGO')}</div>
                             
                             <div class="label">Descripción Técnica</div>
-                            <div class="value" style="font-size: 0.9rem;">${r.repuesto_descripcion || 'Sin descripción'}</div>
+                            <div class="value" style="font-size: 0.9rem;">${formatMultiline(r.repuesto_descripcion)}</div>
                             
                             <div class="grid" style="margin-bottom:0;">
                                 <div>
                                     <div class="label">Cantidad</div>
-                                    <div class="value">${r.cantidad || 0} UN</div>
+                                    <div class="value">${escapeHTML(String(r.cantidad || 0))} UN</div>
                                 </div>
                                 <div>
                                     <div class="label">Ubicación Bodega</div>
-                                    <div class="value" style="font-family: monospace;">${r.codigo_bodega || 'N/A'}</div>
+                                    <div class="value" style="font-family: monospace;">${escapeHTML(r.codigo_bodega || 'N/A')}</div>
                                 </div>
                             </div>
                         </div>
@@ -772,19 +677,19 @@
                         <div class="card">
                             <h3>👥 Personal Involucrado</h3>
                             <div class="label">Retirado por (Técnico)</div>
-                            <div class="value">${r.retirado_por || 'N/A'}</div>
-                            <div class="email-tag">📧 ${r.correo_tecnico || 'Sin correo registrado'}</div>
+                            <div class="value">${escapeHTML(r.retirado_por || 'N/A')}</div>
+                            <div class="email-tag">📧 ${escapeHTML(r.correo_tecnico || 'Sin correo registrado')}</div>
 
                             <div style="height: 1.5rem;"></div>
 
                             <div class="label">Responsable (Planner / Ing)</div>
-                            <div class="value">${r.responsable_reposicion || 'N/A'}</div>
-                            <div class="email-tag">📧 ${r.correo_responsable || 'Sin correo registrado'}</div>
+                            <div class="value">${escapeHTML(r.responsable_reposicion || 'N/A')}</div>
+                            <div class="email-tag">📧 ${escapeHTML(r.correo_responsable || 'Sin correo registrado')}</div>
 
                             <div style="height: 1.5rem;"></div>
                             
                             <div class="label">Personal de Bodega</div>
-                            <div class="value">📦 ${r.personal_bodega || 'No especificado'}</div>
+                            <div class="value">📦 ${escapeHTML(r.personal_bodega || 'No especificado')}</div>
 
                             <div style="height: 1.5rem;"></div>
                             <div style="border-top: 1px dashed var(--border); padding-top: 1rem;">
@@ -792,7 +697,7 @@
                                 <div id="encargadosAreaDetail" style="margin-top: 0.5rem; font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;">
                                     <span style="color: var(--text-muted);">Cargando encargados de área...</span>
                                 </div>
-                                <div style="margin-top: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                <div id="testEmailButtonsDetail" style="display: none; margin-top: 0.75rem; gap: 0.4rem; flex-wrap: wrap;">
                                     <button type="button" onclick="quitarCorreosRealesDetail()" style="background: #fee2e2; color: #991b1b; border: 1px solid #f87171; padding: 4px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer;" title="Retirar correos reales para evitar notificar datos de prueba a los encargados">
                                         🚫 Retirar correos reales
                                     </button>
@@ -813,24 +718,24 @@
                             <div class="grid">
                                 <div>
                                     <div class="label">Razón de la Canibalización</div>
-                                    <div class="value">${r.razon || 'N/A'}</div>
+                                    <div class="value">${escapeHTML(r.razon || 'N/A')}</div>
                                 </div>
                                 <div>
                                     <div class="label">Fecha Estimada Reposición</div>
                                     <div class="value-large" style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span>${r.tiempo_reposicion || 'N/A'}</span>
-                                        <button type="button" class="btn-edit-date" onclick="abrirEdicionFecha('${r.tiempo_reposicion}')" title="Editar fecha de reposición">✏️</button>
+                                        <span>${escapeHTML(fechaReposicionStr)}</span>
+                                        <button type="button" class="btn-edit-date" onclick="abrirEdicionFecha('${escapeHTML(fechaReposicionStr)}')" title="Editar fecha de reposición">✏️</button>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="label">Plan de Acción Preventivo</div>
-                            <div class="plan-box">${r.plan_accion || 'Sin plan de acción'}</div>
+                            <div class="plan-box">${formatMultiline(r.plan_accion)}</div>
 
                             ${r.comentarios ? `
                                 <div style="margin-top: 1.5rem;">
                                     <div class="label">Comentarios Adicionales</div>
-                                    <div class="value" style="font-style: italic;">"${r.comentarios}"</div>
+                                    <div class="value" style="font-style: italic;">"${formatMultiline(r.comentarios)}"</div>
                                 </div>
                             ` : ''}
 
@@ -844,7 +749,7 @@
                     </div>
 
                     <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center;">
-                        <button onclick="confirmarNormalizacion('${idStr}')" style="padding: 1rem 2.5rem; background: var(--primary); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); border-radius: 0.75rem; font-weight: 800; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 0.75rem;">
+                        <button onclick="confirmarNormalizacion('${escapeHTML(idStr)}')" style="padding: 1rem 2.5rem; background: var(--primary); color: var(--accent-yellow); border: 2px solid var(--accent-yellow); border-radius: 0.75rem; font-weight: 800; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 0.75rem;">
                             ${r.normalizado ? '↩️ PENDIENTE' : '✅ NORMALIZADO'}
                         </button>
                     </div>
@@ -861,8 +766,14 @@
                 // Cargar encargados de área y generar mailto
                 cargarEncargadosAreaDetail(r);
             } catch (error) {
-                console.error(error);
-                document.getElementById('content').innerHTML = "<h1>Error al cargar los datos del servidor.</h1>";
+                console.error("Error en cargarDetalle:", error);
+                container.innerHTML = `
+                    <div class="card full-width" style="text-align: center; padding: 3rem;">
+                        <h1 style="color: var(--danger); font-size: 1.5rem;">⚠️ Error al cargar los datos del servidor.</h1>
+                        <p style="color: var(--text-muted); margin: 1rem 0;">Ocurrió una falla de conexión o interpretación de datos.</p>
+                        <a href="history.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary); color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 700;">← Volver al Historial</a>
+                    </div>
+                `;
             }
         }
 
@@ -942,8 +853,8 @@ Mensaje generado automáticamente por el Sistema de Registro de Canibalización 
                 } else {
                     container.innerHTML = combinados.map(c => `
                         <div style="background: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 0.375rem; border: 1px solid #e2e8f0;">
-                            <strong style="color: #0369a1;">[${c.cargo}]</strong> ${c.nombre} <br>
-                            <small style="color: #64748b;">📧 ${c.correo || 'Sin correo'}</small>
+                            <strong style="color: #0369a1;">[${escapeHTML(c.cargo)}]</strong> ${escapeHTML(c.nombre)} <br>
+                            <small style="color: #64748b;">📧 ${escapeHTML(c.correo || 'Sin correo')}</small>
                         </div>
                     `).join('');
                 }
@@ -955,10 +866,11 @@ Mensaje generado automáticamente por el Sistema de Registro de Canibalización 
         }
 
         async function confirmarNormalizacion(id) {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
+            const { token } = syncAndGetSession();
             if (!token) {
-                window.accionPendiente = { tipo: 'normalizar', data: id };
-                abrirModal('modalLogin');
+                if (confirm("Debe iniciar sesión en la pantalla principal para cambiar el estado. ¿Desea ir a la pantalla principal para iniciar sesión?")) {
+                    irAPantallaPrincipalLogin();
+                }
                 return;
             }
 
@@ -972,7 +884,6 @@ Mensaje generado automáticamente por el Sistema de Registro de Canibalización 
                     });
                     const resData = await response.json();
                     if (response.ok && resData.success) {
-                        // Recargar la página para ver los cambios
                         location.reload();
                     } else {
                         alert(resData.detail || resData.error || 'Error al actualizar el estado.');
@@ -984,7 +895,22 @@ Mensaje generado automáticamente por el Sistema de Registro de Canibalización 
             }
         }
 
-        cargarDetalle();
+        // Inicialización única al cargar el DOM
+        let detalleInicializado = false;
+        function initDetallePage() {
+            if (detalleInicializado) return;
+            detalleInicializado = true;
+            resetInactivityTimer();
+            actualizarIndicadorSesion();
+            cargarDetalle();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDetallePage);
+        } else {
+            initDetallePage();
+        }
     </script>
 </body>
 </html>
+

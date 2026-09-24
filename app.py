@@ -865,10 +865,16 @@ async def enviar_correo_backend(req: EnviarCorreoBackendRequest):
             "detail": f"Correo enviado exitosamente en segundo plano a {len(to_emails)} destinatario(s) vía SMTP."
         }
     except Exception as e:
-        print(f"Error al enviar correo SMTP: {e}")
+        err_msg = str(e)
+        print(f"Error al enviar correo SMTP: {err_msg}")
+        if "5.7.139" in err_msg or "SmtpClientAuthentication is disabled" in err_msg:
+            return {
+                "success": False,
+                "detail": "Microsoft 365 bloqueó la autenticación SMTP (SmtpClientAuthentication is disabled en la cuenta corporativa Goodyear). Por favor utilice el botón 'Redactar Correo Notificación' para enviar vía Outlook."
+            }
         return {
             "success": False,
-            "detail": f"Error al conectar con servidor SMTP: {str(e)}"
+            "detail": f"Error al conectar con servidor SMTP: {err_msg}"
         }
 
 # Servir archivos estáticos (index.html, styles.css)

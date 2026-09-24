@@ -390,9 +390,9 @@
                     </div>
                 </div>
 
-                <!-- Recipient Emails & Custom Test Emails Section -->
-                <div
-                    style="background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 0.75rem; padding: 1.25rem;">
+                <!-- Recipient Emails & Custom Test Emails Section (Inhabilitado por defecto para producción) -->
+                <div id="sectionModoPruebasEmail"
+                    style="display: none; background: #f0f9ff; border: 1.5px solid #0284c7; border-radius: 0.75rem; padding: 1.25rem;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <h4
@@ -2487,11 +2487,28 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
             actualizarIndicadorSesion();
         });
 
+        function syncAndGetSession() {
+            let token = localStorage.getItem('session_token') || sessionStorage.getItem('session_token') || '';
+            let usuario = localStorage.getItem('session_usuario') || sessionStorage.getItem('session_usuario') || '';
+            let nombre = localStorage.getItem('session_nombre') || sessionStorage.getItem('session_nombre') || '';
+            let rol = localStorage.getItem('session_rol') || sessionStorage.getItem('session_rol') || '';
+
+            if (token && usuario) {
+                localStorage.setItem('session_token', token);
+                localStorage.setItem('session_usuario', usuario);
+                if (nombre) localStorage.setItem('session_nombre', nombre);
+                if (rol) localStorage.setItem('session_rol', rol);
+
+                sessionStorage.setItem('session_token', token);
+                sessionStorage.setItem('session_usuario', usuario);
+                if (nombre) sessionStorage.setItem('session_nombre', nombre);
+                if (rol) sessionStorage.setItem('session_rol', rol);
+            }
+            return { token, usuario, nombre, rol };
+        }
+
         function actualizarIndicadorSesion() {
-            const token = sessionStorage.getItem('session_token') || localStorage.getItem('session_token');
-            const usuario = sessionStorage.getItem('session_usuario') || localStorage.getItem('session_usuario');
-            const nombre = sessionStorage.getItem('session_nombre') || localStorage.getItem('session_nombre');
-            const rol = sessionStorage.getItem('session_rol') || localStorage.getItem('session_rol');
+            const { token, usuario, nombre, rol } = syncAndGetSession();
 
             const nameSpan = document.getElementById('sessionUserName');
             const btnLoginLogout = document.getElementById('btnLoginLogout');
@@ -2552,6 +2569,13 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
                     cerrarModal('modalLogin');
                     actualizarIndicadorSesion();
 
+                    const params = new URLSearchParams(window.location.search);
+                    const redirectUrl = params.get('redirect');
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                        return;
+                    }
+
                     if (data.rol === 'admin') {
                         alert(`¡Bienvenido ${data.nombre}! Sesión iniciada como Administrador.`);
                     }
@@ -2591,6 +2615,13 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
                 cerrarModal('modalLogin');
                 actualizarIndicadorSesion();
 
+                const params = new URLSearchParams(window.location.search);
+                const redirectUrl = params.get('redirect');
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
                 if (mock.rol === 'admin') {
                     alert(`¡Bienvenido ${mock.nombre}! Sesión iniciada como Administrador.`);
                 }
@@ -2621,12 +2652,18 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
         }
 
         // Inicializar estado de sesión
-                window.toggleLoginModal = toggleLoginModal;
+        window.toggleLoginModal = toggleLoginModal;
         window.cerrarModal = cerrarModal;
         window.cerrarSesion = cerrarSesion;
         window.quickLogin = quickLogin;
         window.procesarLogin = procesarLogin;
         actualizarIndicadorSesion();
+
+        // Si la URL contiene el parámetro para iniciar sesión (redirección desde otra página)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('login') === 'true' || urlParams.get('abrirLogin') === 'true') {
+            toggleLoginModal();
+        }
     </script>
 
     <!-- Modal de Login Universal -->
@@ -2653,8 +2690,8 @@ Mensaje generado automáticamente por el Sistema de Canibalización Goodyear Pla
                     <div id="loginError" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.75rem; display: none; font-weight: 600; text-align: center;">Usuario o contraseña incorrectos</div>
                 </form>
 
-                <!-- Cuentas sugeridas de prueba con Click Instantáneo -->
-                <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
+                <!-- Cuentas sugeridas de prueba con Click Instantáneo (Inhabilitado por defecto) -->
+                <div id="quickTestLoginBlock" style="display: none; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #64748b;">
                     <strong style="color: #002855; display: block; margin-bottom: 0.5rem;">⚡ Iniciar Sesión Rápida de Prueba:</strong>
                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                         <button type="button" onclick="quickLogin('planificador', 'goodyear123')" style="text-align: left; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">

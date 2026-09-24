@@ -2,19 +2,24 @@ import os
 from ldap3 import Server, Connection, SUBTREE
 
 def load_env():
-    """Carga de forma manual las variables de entorno desde el archivo .env"""
-    env_path = os.path.join(os.path.dirname(__file__), ".env")
-    if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, val = line.split("=", 1)
-                    key = key.strip()
-                    val = val.strip().strip("'\"")
-                    os.environ[key] = val
+    """Carga de forma manual las variables de entorno desde el archivo .env o .env.example"""
+    base_dir = os.path.dirname(__file__)
+    for filename in [".env", ".env.example"]:
+        env_path = os.path.join(base_dir, filename)
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" in line:
+                            key, val = line.split("=", 1)
+                            key = key.strip()
+                            val = val.strip().strip("'\"")
+                            os.environ[key] = val
+            except Exception as err:
+                print(f"Aviso leyendo {filename}: {err}")
 
 def get_ldap_connection():
     """Establece y retorna una conexión bind a LDAP usando la configuración de .env"""
